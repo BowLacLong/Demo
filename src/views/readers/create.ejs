@@ -1,0 +1,156 @@
+<%- include('../partials/layout-start') %>
+
+<div class="max-w-3xl mx-auto space-y-6">
+  <!-- Guidance Card for QĐ2 -->
+  <div class="p-4 bg-indigo-50 border border-indigo-200 rounded-2xl flex items-start gap-3">
+    <i class="fa-solid fa-circle-info text-indigo-600 text-lg mt-0.5"></i>
+    <div class="text-xs text-indigo-900 leading-relaxed">
+      <span class="font-bold">Quy định 2 (QĐ2) - Lập thẻ độc giả:</span>
+      Tuổi của độc giả phải từ <strong class="text-indigo-700 font-bold"><%= minAge %></strong> đến <strong class="text-indigo-700 font-bold"><%= maxAge %> tuổi</strong>.
+      Thời hạn giá trị của thẻ là <strong class="text-indigo-700 font-bold"><%= cardMonths %> tháng</strong> kể từ ngày cấp thẻ.
+    </div>
+  </div>
+
+  <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+    <div class="mb-6 pb-4 border-b border-slate-100 flex items-center justify-between">
+      <div>
+        <h2 class="text-lg font-bold text-slate-800">Lập Thẻ Độc Giả Mới</h2>
+        <p class="text-xs text-slate-500">Mã thẻ độc giả sẽ được hệ thống sinh tự động (DGxxxx)</p>
+      </div>
+      <a href="/readers" class="text-xs text-slate-500 hover:text-slate-800">
+        <i class="fa-solid fa-arrow-left mr-1"></i> Quay lại danh sách
+      </a>
+    </div>
+
+    <form action="/readers" method="POST" class="space-y-4" id="createReaderForm">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <!-- Fullname -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Họ và Tên Độc Giả <span class="text-red-500">*</span></label>
+          <input type="text" name="fullname" required placeholder="VD: Nguyễn Văn A"
+            class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-hidden" />
+        </div>
+
+        <!-- Reader Type (QĐ2) -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Loại Độc Giả (QĐ2) <span class="text-red-500">*</span></label>
+          <select name="reader_type_id" required class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-hidden">
+            <% readerTypes.forEach(rt => { %>
+              <option value="<%= rt.id %>">[<%= rt.code %>] <%= rt.name %> (Tối đa <%= rt.max_borrow_limit %> cuốn)</option>
+            <% }) %>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <!-- Date of Birth (QĐ2) -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">
+            Ngày Sinh (QĐ2) <span class="text-red-500">*</span>
+            <span class="text-[10px] text-indigo-600 font-normal">(<%= minAge %> - <%= maxAge %> tuổi)</span>
+          </label>
+          <input type="date" id="dobInput" name="date_of_birth" required max="<%= maxDob %>" min="<%= minDob %>"
+            class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-hidden" />
+          <div id="ageFeedback" class="text-[11px] mt-1 font-medium hidden"></div>
+        </div>
+
+        <!-- Phone -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Số Điện Thoại</label>
+          <input type="tel" name="phone" placeholder="VD: 0901234567"
+            class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-hidden" />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <!-- Email -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Địa Chỉ Email <span class="text-red-500">*</span></label>
+          <input type="email" name="email" required placeholder="email@domain.com"
+            class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-hidden" />
+        </div>
+
+        <!-- Address -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Địa Chỉ Thường Trú <span class="text-red-500">*</span></label>
+          <input type="text" name="address" required placeholder="Số nhà, đường, quận/huyện, tỉnh/TP"
+            class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-hidden" />
+        </div>
+      </div>
+
+      <!-- Card Validity Info Box (Auto calculated) -->
+      <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Ngày Lập Thẻ</label>
+          <input type="date" name="created_date" id="createdDateInput" value="<%= todayStr %>"
+            class="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-white" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Hạn Sử Dụng Thẻ (+<%= cardMonths %> tháng theo QĐ2)</label>
+          <input type="date" name="expiry_date" id="expiryDateInput" readonly
+            class="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-slate-100 font-bold text-blue-700" />
+        </div>
+      </div>
+
+      <div class="pt-3 flex items-center justify-end gap-3">
+        <a href="/readers" class="px-4 py-2.5 border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl text-xs font-semibold transition">
+          Hủy bỏ
+        </a>
+        <button type="submit" id="submitBtn" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition">
+          <i class="fa-solid fa-id-card mr-1.5"></i> Cấp Thẻ Độc Giả
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const minAge = <%= minAge %>;
+  const maxAge = <%= maxAge %>;
+  const cardMonths = <%= cardMonths %>;
+
+  const dobInput = document.getElementById('dobInput');
+  const ageFeedback = document.getElementById('ageFeedback');
+  const createdDateInput = document.getElementById('createdDateInput');
+  const expiryDateInput = document.getElementById('expiryDateInput');
+  const submitBtn = document.getElementById('submitBtn');
+
+  // Calculate initial expiry date
+  function updateExpiry() {
+    const createdVal = createdDateInput.value;
+    if (createdVal) {
+      const d = new Date(createdVal);
+      d.setMonth(d.getMonth() + cardMonths);
+      expiryDateInput.value = d.toISOString().split('T')[0];
+    }
+  }
+  updateExpiry();
+  createdDateInput.addEventListener('change', updateExpiry);
+
+  // Live age validation
+  dobInput.addEventListener('change', function() {
+    if (!this.value) return;
+    const dob = new Date(this.value);
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const m = today.getMonth() - dob.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+      age--;
+    }
+
+    ageFeedback.classList.remove('hidden');
+    if (age < minAge || age > maxAge) {
+      ageFeedback.className = 'text-[11px] mt-1 font-semibold text-red-600';
+      ageFeedback.textContent = `❌ Vi phạm QĐ2: Độc giả hiện tại ${age} tuổi (Quy định: từ ${minAge} đến ${maxAge} tuổi).`;
+      submitBtn.disabled = true;
+      submitBtn.classList.add('opacity-50');
+    } else {
+      ageFeedback.className = 'text-[11px] mt-1 font-semibold text-green-600';
+      ageFeedback.textContent = `✓ Hợp lệ: Độc giả ${age} tuổi (Nằm trong khoảng ${minAge} - ${maxAge} tuổi theo QĐ2).`;
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('opacity-50');
+    }
+  });
+</script>
+
+<%- include('../partials/layout-end') %>

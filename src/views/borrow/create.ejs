@@ -1,0 +1,182 @@
+<%- include('../partials/layout-start') %>
+
+<div class="max-w-4xl mx-auto space-y-6">
+  <!-- Guidance Card for QĐ3 -->
+  <div class="p-4 bg-blue-50 border border-blue-200 rounded-2xl flex items-start gap-3">
+    <i class="fa-solid fa-circle-info text-blue-600 text-lg mt-0.5"></i>
+    <div class="text-xs text-blue-900 leading-relaxed">
+      <span class="font-bold">Quy định 3 (QĐ3) - Cho mượn sách:</span>
+      Độc giả chỉ được mượn khi thẻ còn hạn sử dụng, không giữ sách quá hạn chưa trả. 
+      Mỗi độc giả được mượn tối đa <strong class="text-blue-700 font-bold"><%= rules.max_borrow_books || 5 %> cuốn sách</strong> cùng lúc, 
+      thời hạn mỗi lần mượn tối đa <strong class="text-blue-700 font-bold"><%= rules.max_borrow_days || 14 %> ngày</strong>.
+    </div>
+  </div>
+
+  <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+    <div class="mb-6 pb-4 border-b border-slate-100 flex items-center justify-between">
+      <div>
+        <h2 class="text-lg font-bold text-slate-800">Lập Phiếu Mượn Sách Mới</h2>
+        <p class="text-xs text-slate-500">Chọn độc giả và chọn các bản sách cá biệt có sẵn để cho mượn</p>
+      </div>
+      <a href="/borrow" class="text-xs text-slate-500 hover:text-slate-800">
+        <i class="fa-solid fa-arrow-left mr-1"></i> Quay lại
+      </a>
+    </div>
+
+    <!-- Step 1: Select Reader -->
+    <div class="mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+      <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+        1. Chọn Độc Giả Mượn Sách <span class="text-red-500">*</span>
+      </label>
+      <div class="flex flex-col sm:flex-row gap-3">
+        <select id="readerSelect" class="flex-1 px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-hidden">
+          <option value="">-- Chọn độc giả từ danh sách --</option>
+          <% readers.forEach(r => { %>
+            <option value="<%= r.id %>" <%= selectedReader && selectedReader.id === r.id ? 'selected' : '' %>>
+              <%= r.reader_code %> - <%= r.fullname %> (Đang mượn <%= r.currently_borrowing %>/<%= r.max_borrow_limit %> cuốn)
+            </option>
+          <% }) %>
+        </select>
+        <button type="button" onclick="selectReader()" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold transition">
+          Xác nhận độc giả
+        </button>
+      </div>
+
+      <!-- Eligibility Feedback Alert -->
+      <% if (selectedReader) { %>
+        <div class="mt-4 p-4 rounded-xl text-xs border <%= eligibility && eligibility.valid ? 'bg-green-50 border-green-200 text-green-900' : 'bg-red-50 border-red-200 text-red-900' %>">
+          <div class="flex items-center gap-2 font-bold mb-1">
+            <i class="fa-solid <%= eligibility && eligibility.valid ? 'fa-circle-check text-green-600' : 'fa-circle-xmark text-red-600' %> text-base"></i>
+            <span><%= eligibility && eligibility.valid ? 'Độc giả đủ điều kiện mượn sách theo QĐ3' : 'Không đủ điều kiện mượn sách!' %></span>
+          </div>
+          <div class="space-y-0.5 text-[11px] mt-1 pl-6">
+            <p>&bull; Độc giả: <strong><%= selectedReader.fullname %></strong> (Mã: <%= selectedReader.reader_code %>)</p>
+            <p>&bull; Hạn thẻ thư viện: <%= selectedReader.expiry_date %></p>
+            <p>&bull; Số sách đang giữ: <strong><%= selectedReader.currently_borrowing %></strong> / <%= rules.max_borrow_books || 5 %> cuốn tối đa</p>
+            <% if (!eligibility.valid) { %>
+              <p class="font-bold text-red-700 mt-1">&rarr; <%= eligibility.message %></p>
+            <% } %>
+          </div>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Step 2: Book Selection Form -->
+    <form action="/borrow" method="POST" id="borrowForm" class="space-y-6">
+      <input type="hidden" name="reader_id" value="<%= selectedReader ? selectedReader.id : '' %>" id="formReaderId" />
+
+      <!-- Dates & Notes -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Ngày Mượn</label>
+          <input type="date" name="borrow_date" id="borrowDate" value="<%= todayStr %>"
+            class="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white text-xs focus:ring-2 focus:ring-blue-500 focus:outline-hidden" />
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Hạn Trả (+<%= rules.max_borrow_days || 14 %> ngày theo QĐ3)</label>
+          <input type="date" id="dueDate" value="<%= defaultDueDate %>" readonly
+            class="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-100 font-bold text-blue-700 text-xs" />
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Ghi Chú Phiếu Mượn</label>
+          <input type="text" name="note" placeholder="Mượn học phần hoặc nghiên cứu..."
+            class="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white text-xs focus:ring-2 focus:ring-blue-500 focus:outline-hidden" />
+        </div>
+      </div>
+
+      <!-- Book Copies Picker -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+            2. Chọn Bản Sách Mượn (Chỉ hiển thị bản có sẵn)
+          </label>
+          <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200">
+            Đã chọn: <span id="selectedCount">0</span> cuốn
+          </span>
+        </div>
+
+        <div class="border border-slate-200 rounded-2xl max-h-72 overflow-y-auto p-2 bg-slate-50/50 space-y-1.5 divide-y divide-slate-100">
+          <% if (availableCopies && availableCopies.length > 0) { %>
+            <% availableCopies.forEach(cp => { %>
+              <label class="flex items-center justify-between p-2.5 hover:bg-white rounded-xl cursor-pointer transition border border-transparent hover:border-slate-200 group">
+                <div class="flex items-center gap-3">
+                  <input type="checkbox" name="copy_ids" value="<%= cp.id %>" onchange="updateSelectedCount()"
+                    class="copy-checkbox w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                  <img src="<%= cp.cover_image || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=100' %>" 
+                       class="w-8 h-10 object-cover rounded shadow-2xs" alt="" />
+                  <div>
+                    <div class="font-bold text-slate-800 text-xs group-hover:text-blue-600 transition"><%= cp.title %></div>
+                    <div class="text-[10px] text-slate-400">
+                      Vị trí: <%= cp.location || 'Kệ chung' %> &bull; Thể loại: <%= cp.category_name %>
+                    </div>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <span class="font-mono text-xs font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                    <%= cp.barcode %>
+                  </span>
+                </div>
+              </label>
+            <% }) %>
+          <% } else { %>
+            <div class="py-8 text-center text-slate-400 text-xs">
+              Hiện tại không có bản sách nào có sẵn trong kho để cho mượn!
+            </div>
+          <% } %>
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-3">
+        <a href="/borrow" class="px-4 py-2.5 border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl text-xs font-semibold transition">
+          Hủy bỏ
+        </a>
+        <button type="submit" id="submitBorrowBtn" <%= !selectedReader || (eligibility && !eligibility.valid) ? 'disabled' : '' %>
+          class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl text-xs font-semibold shadow-xs transition flex items-center gap-2">
+          <i class="fa-solid fa-check"></i>
+          <span>Xác Nhận Lập Phiếu Mượn</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function selectReader() {
+    const readerId = document.getElementById('readerSelect').value;
+    if (readerId) {
+      window.location.href = `/borrow/create?reader_id=${readerId}`;
+    }
+  }
+
+  const maxBorrowDays = <%= rules.max_borrow_days || 14 %>;
+  const maxBooks = <%= rules.max_borrow_books || 5 %>;
+  const currentBorrowing = <%= selectedReader ? selectedReader.currently_borrowing : 0 %>;
+
+  const borrowDateInput = document.getElementById('borrowDate');
+  const dueDateInput = document.getElementById('dueDate');
+
+  borrowDateInput.addEventListener('change', function() {
+    if (this.value) {
+      const d = new Date(this.value);
+      d.setDate(d.getDate() + maxBorrowDays);
+      dueDateInput.value = d.toISOString().split('T')[0];
+    }
+  });
+
+  function updateSelectedCount() {
+    const checkboxes = document.querySelectorAll('.copy-checkbox:checked');
+    const count = checkboxes.length;
+    document.getElementById('selectedCount').textContent = count;
+
+    const remainingAllowed = maxBooks - currentBorrowing;
+    if (count > remainingAllowed) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Vượt quá quy định QĐ3!',
+        text: `Độc giả chỉ được mượn thêm tối đa ${remainingAllowed} cuốn (Hiện đang giữ ${currentBorrowing}/${maxBooks} cuốn).`
+      });
+    }
+  }
+</script>
+
+<%- include('../partials/layout-end') %>

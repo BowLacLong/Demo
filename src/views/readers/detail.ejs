@@ -1,0 +1,296 @@
+<%- include('../partials/layout-start') %>
+
+<div class="space-y-6">
+  <!-- Top Navigation & Actions -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <a href="/readers" class="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 transition">
+      <i class="fa-solid fa-arrow-left"></i> Quay lại danh sách độc giả
+    </a>
+
+    <div class="flex items-center gap-2">
+      <% if (reader.total_debt > 0) { %>
+        <a href="/fines/create?reader_id=<%= reader.id %>" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition flex items-center gap-1.5">
+          <i class="fa-solid fa-receipt"></i> Thu Tiền Phạt (<%= reader.total_debt.toLocaleString('vi-VN') %> đ)
+        </a>
+      <% } %>
+
+      <a href="/borrow/create?reader_id=<%= reader.id %>" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition flex items-center gap-1.5">
+        <i class="fa-solid fa-plus-circle"></i> Lập Phiếu Mượn
+      </a>
+
+      <a href="/readers/<%= reader.id %>/edit" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition">
+        <i class="fa-solid fa-pen-to-square mr-1"></i> Chỉnh sửa
+      </a>
+
+      <button type="button" onclick="document.getElementById('extendModal').classList.remove('hidden')" class="px-3.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-semibold transition">
+        <i class="fa-solid fa-clock-rotate-left mr-1"></i> Gia hạn thẻ
+      </button>
+
+      <% if (currentUser && currentUser.role === 'admin') { %>
+        <form action="/readers/<%= reader.id %>/delete" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn xoá thẻ độc giả này?');">
+          <button type="submit" class="px-3.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-semibold transition">
+            <i class="fa-solid fa-trash mr-1"></i> Xoá
+          </button>
+        </form>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Library Card (Thẻ Độc Giả) Design & Info -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Physical Card Preview -->
+    <div class="lg:col-span-1">
+      <div class="bg-gradient-to-br from-blue-900 via-indigo-900 to-slate-900 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden border border-blue-800">
+        <!-- Watermark / BG decoration -->
+        <div class="absolute -right-8 -bottom-8 w-40 h-40 bg-blue-500/10 rounded-full blur-2xl"></div>
+
+        <div class="flex items-center justify-between border-b border-white/10 pb-4 mb-4">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center text-white text-sm shadow-md">
+              <i class="fa-solid fa-book-bookmark"></i>
+            </div>
+            <div>
+              <h4 class="font-bold text-xs uppercase tracking-wider text-blue-200"><%= libraryName %></h4>
+              <p class="text-[10px] text-slate-300">THẺ ĐỘC GIẢ THƯ VIỆN</p>
+            </div>
+          </div>
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-slate-900">
+            [<%= reader.type_code %>]
+          </span>
+        </div>
+
+        <div class="flex items-center gap-4 mb-5">
+          <div class="w-16 h-16 rounded-2xl bg-slate-700 border-2 border-white/20 flex items-center justify-center text-2xl font-black text-blue-300 shadow-inner">
+            <%= reader.fullname.charAt(0).toUpperCase() %>
+          </div>
+          <div>
+            <h3 class="font-black text-base text-white leading-tight"><%= reader.fullname %></h3>
+            <p class="text-xs text-blue-200 mt-0.5"><%= reader.type_name %></p>
+            <p class="text-[11px] text-slate-400 mt-1">Sinh: <%= reader.date_of_birth %></p>
+          </div>
+        </div>
+
+        <div class="space-y-1.5 text-[11px] text-slate-300 border-t border-white/10 pt-3">
+          <div class="flex justify-between">
+            <span>Mã Thẻ:</span>
+            <span class="font-mono font-bold text-amber-300 text-xs"><%= reader.reader_code %></span>
+          </div>
+          <div class="flex justify-between">
+            <span>Ngày cấp thẻ:</span>
+            <span><%= reader.created_date %></span>
+          </div>
+          <div class="flex justify-between">
+            <span>Hạn sử dụng:</span>
+            <span class="font-bold text-emerald-400"><%= reader.expiry_date %></span>
+          </div>
+        </div>
+
+        <!-- Barcode Simulation -->
+        <div class="mt-4 pt-3 border-t border-white/10 text-center">
+          <div class="font-mono text-xl tracking-widest text-slate-200 font-bold">||||| | |||| || ||| |</div>
+          <div class="text-[10px] font-mono text-slate-400 mt-0.5"><%= reader.reader_code %></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detailed Stats & Status Cards -->
+    <div class="lg:col-span-2 space-y-4">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+        <h3 class="font-bold text-slate-800 text-base mb-4">Thông tin chi tiết hồ sơ</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+          <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+            <span class="text-slate-400 block mb-0.5 font-medium">Địa chỉ thường trú</span>
+            <span class="font-semibold text-slate-800"><%= reader.address %></span>
+          </div>
+          <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+            <span class="text-slate-400 block mb-0.5 font-medium">Email liên hệ</span>
+            <span class="font-semibold text-slate-800"><%= reader.email %></span>
+          </div>
+          <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+            <span class="text-slate-400 block mb-0.5 font-medium">Số điện thoại</span>
+            <span class="font-semibold text-slate-800"><%= reader.phone || 'Chưa cập nhật' %></span>
+          </div>
+          <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+            <span class="text-slate-400 block mb-0.5 font-medium">Hạn mức mượn tối đa</span>
+            <span class="font-semibold text-blue-600"><%= reader.max_borrow_limit %> cuốn cùng lúc</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick KPI Counters for Reader -->
+      <div class="grid grid-cols-3 gap-4">
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 text-center shadow-xs">
+          <p class="text-[11px] text-slate-400 uppercase font-semibold">Đang mượn</p>
+          <p class="text-xl font-black text-blue-600 mt-1"><%= reader.currently_borrowing %> cuốn</p>
+        </div>
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 text-center shadow-xs">
+          <p class="text-[11px] text-slate-400 uppercase font-semibold">Quá hạn</p>
+          <p class="text-xl font-black <%= reader.overdue_books_count > 0 ? 'text-red-600' : 'text-slate-700' %> mt-1">
+            <%= reader.overdue_books_count || 0 %> cuốn
+          </p>
+        </div>
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 text-center shadow-xs">
+          <p class="text-[11px] text-slate-400 uppercase font-semibold">Tổng nợ phạt (QĐ5)</p>
+          <p class="text-xl font-black <%= reader.total_debt > 0 ? 'text-red-600' : 'text-emerald-600' %> mt-1">
+            <%= (reader.total_debt || 0).toLocaleString('vi-VN') %> đ
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Borrow Tickets History Table -->
+  <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+    <h3 class="font-bold text-slate-800 text-base mb-4 flex items-center gap-2">
+      <i class="fa-solid fa-clock-rotate-left text-blue-600"></i> Lịch Sử Mượn - Trả Sách
+    </h3>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs">
+        <thead class="bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider border-b border-slate-200">
+          <tr>
+            <th class="py-2.5 px-3">Mã Phiếu</th>
+            <th class="py-2.5 px-3">Ngày Mượn</th>
+            <th class="py-2.5 px-3">Hạn Trả</th>
+            <th class="py-2.5 px-3">Chi Tiết Sách</th>
+            <th class="py-2.5 px-3">Trạng Thái</th>
+            <th class="py-2.5 px-3 text-right">Thao Tác</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <% if (tickets && tickets.length > 0) { %>
+            <% tickets.forEach(t => { %>
+              <tr class="hover:bg-slate-50 transition">
+                <td class="py-3 px-3 font-mono font-bold text-blue-600">
+                  <a href="/borrow/<%= t.id %>" class="hover:underline"><%= t.ticket_code %></a>
+                </td>
+                <td class="py-3 px-3 text-slate-600"><%= t.borrow_date %></td>
+                <td class="py-3 px-3 font-medium <%= t.status === 'borrowing' && new Date(t.due_date) < new Date() ? 'text-red-600 font-bold' : 'text-slate-600' %>">
+                  <%= t.due_date %>
+                </td>
+                <td class="py-3 px-3">
+                  <ul class="space-y-1">
+                    <% (t.details || []).forEach(d => { %>
+                      <li class="flex items-center gap-2">
+                        <span class="font-mono text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded"><%= d.barcode %></span>
+                        <span class="font-medium text-slate-800 truncate max-w-xs"><%= d.book_title %></span>
+                        <% if (d.status === 'borrowed') { %>
+                          <span class="text-[9px] px-1.5 py-0.2 rounded-full font-bold bg-blue-100 text-blue-800">Đang giữ</span>
+                        <% } else { %>
+                          <span class="text-[9px] px-1.5 py-0.2 rounded-full font-bold bg-green-100 text-green-800">Đã trả</span>
+                        <% } %>
+                      </li>
+                    <% }) %>
+                  </ul>
+                </td>
+                <td class="py-3 px-3">
+                  <% if (t.status === 'borrowing') { %>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">Đang mượn</span>
+                  <% } else if (t.status === 'overdue') { %>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-800">Quá hạn</span>
+                  <% } else { %>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-800">Đã hoàn tất</span>
+                  <% } %>
+                </td>
+                <td class="py-3 px-3 text-right">
+                  <a href="/borrow/<%= t.id %>" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium">
+                    Xem
+                  </a>
+                </td>
+              </tr>
+            <% }) %>
+          <% } else { %>
+            <tr>
+              <td colspan="6" class="text-center py-6 text-slate-400">Độc giả chưa có giao dịch mượn nào</td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Fine Receipts History Table -->
+  <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+    <h3 class="font-bold text-slate-800 text-base mb-4 flex items-center gap-2">
+      <i class="fa-solid fa-receipt text-emerald-600"></i> Lịch Sử Phiếu Thu Tiền Phạt (QĐ5)
+    </h3>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs">
+        <thead class="bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider border-b border-slate-200">
+          <tr>
+            <th class="py-2.5 px-3">Mã Phiếu Thu</th>
+            <th class="py-2.5 px-3">Ngày Thu</th>
+            <th class="py-2.5 px-3">Tổng Nợ Trước Thu</th>
+            <th class="py-2.5 px-3">Số Tiền Thu</th>
+            <th class="py-2.5 px-3">Nợ Còn Lại</th>
+            <th class="py-2.5 px-3">Người Thu</th>
+            <th class="py-2.5 px-3 text-right">In Phiếu</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <% if (receipts && receipts.length > 0) { %>
+            <% receipts.forEach(r => { %>
+              <tr class="hover:bg-slate-50 transition">
+                <td class="py-3 px-3 font-mono font-bold text-emerald-600"><%= r.receipt_code %></td>
+                <td class="py-3 px-3 text-slate-600"><%= new Date(r.receipt_date).toLocaleDateString('vi-VN') %></td>
+                <td class="py-3 px-3 text-slate-500"><%= r.total_debt.toLocaleString('vi-VN') %> đ</td>
+                <td class="py-3 px-3 font-bold text-emerald-600"><%= r.collected_amount.toLocaleString('vi-VN') %> đ</td>
+                <td class="py-3 px-3 font-semibold text-slate-700"><%= r.remaining_debt.toLocaleString('vi-VN') %> đ</td>
+                <td class="py-3 px-3 text-slate-600"><%= r.creator_name || 'Admin' %></td>
+                <td class="py-3 px-3 text-right">
+                  <a href="/fines/<%= r.id %>/print" target="_blank" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium">
+                    <i class="fa-solid fa-print mr-1"></i> In
+                  </a>
+                </td>
+              </tr>
+            <% }) %>
+          <% } else { %>
+            <tr>
+              <td colspan="7" class="text-center py-6 text-slate-400">Chưa có phiếu thu tiền phạt nào</td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Gia Hạn Thẻ -->
+<div id="extendModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
+  <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100">
+    <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+      <h3 class="font-bold text-slate-800 text-sm">Gia Hạn Thẻ Độc Giả</h3>
+      <button type="button" onclick="document.getElementById('extendModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <form action="/readers/<%= reader.id %>/extend" method="POST" class="space-y-4">
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1">Thời gian gia hạn thêm</label>
+        <select name="months" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-hidden">
+          <option value="6">Gia hạn +6 tháng (Mặc định theo QĐ2)</option>
+          <option value="12">Gia hạn +12 tháng (1 năm)</option>
+          <option value="3">Gia hạn +3 tháng</option>
+        </select>
+      </div>
+
+      <p class="text-xs text-slate-500">
+        Hạn dùng hiện tại: <strong><%= reader.expiry_date %></strong>. Thẻ sẽ được tự động chuyển sang trạng thái Hoạt động.
+      </p>
+
+      <div class="pt-3 flex items-center justify-end gap-2">
+        <button type="button" onclick="document.getElementById('extendModal').classList.add('hidden')"
+          class="px-4 py-2 border border-slate-200 rounded-xl text-xs text-slate-700 hover:bg-slate-50">
+          Hủy
+        </button>
+        <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-xs">
+          Xác nhận gia hạn
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('../partials/layout-end') %>

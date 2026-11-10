@@ -1,0 +1,228 @@
+<%- include('../partials/layout-start') %>
+
+<div class="space-y-6">
+  <!-- Top Bar -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-xl font-bold text-slate-800">Cấu Hình Quy Định Hệ Thống (QĐ1 - QĐ6)</h2>
+      <p class="text-xs text-slate-500">Các tham số quy định có thể thay đổi linh hoạt theo chính sách vận hành của thư viện</p>
+    </div>
+  </div>
+
+  <!-- Main System Parameters Form -->
+  <form action="/rules" method="POST" class="space-y-6">
+    <!-- Group 1: Quy định nghiệp vụ sách & độc giả -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+      <h3 class="font-bold text-slate-800 text-base mb-4 flex items-center gap-2">
+        <i class="fa-solid fa-sliders text-blue-600"></i> Tham Số Quy Định Nghiệp Vụ
+      </h3>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+        <!-- QĐ1: Năm xuất bản -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+          <label class="block font-bold text-slate-800 mb-1">
+            QĐ1: Khoảng cách năm xuất bản tối đa (năm)
+          </label>
+          <p class="text-[11px] text-slate-500 mb-2">Chỉ tiếp nhận các sách xuất bản trong vòng N năm tính từ năm hiện tại.</p>
+          <div class="flex items-center gap-2">
+            <input type="number" name="max_publish_years_gap" min="1" max="50"
+              value="<%= systemRules.max_publish_years_gap || 8 %>"
+              class="w-32 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:ring-2 focus:ring-blue-500" />
+            <span class="text-slate-500 font-semibold">năm gần nhất</span>
+          </div>
+        </div>
+
+        <!-- QĐ2: Tuổi độc giả -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+          <label class="block font-bold text-slate-800 mb-1">
+            QĐ2: Độ tuổi độc giả được cấp thẻ
+          </label>
+          <p class="text-[11px] text-slate-500 mb-2">Độc giả phải có tuổi từ Tuổi_Tối_Thiểu đến Tuổi_Tối_Đa.</p>
+          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-1.5">
+              <span class="text-slate-500 font-medium">Từ:</span>
+              <input type="number" name="min_reader_age" min="5" max="80"
+                value="<%= systemRules.min_reader_age || 18 %>"
+                class="w-20 px-2.5 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-slate-500 font-medium">Đến:</span>
+              <input type="number" name="max_reader_age" min="10" max="100"
+                value="<%= systemRules.max_reader_age || 55 %>"
+                class="w-20 px-2.5 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:ring-2 focus:ring-blue-500" />
+              <span class="text-slate-500 font-semibold">tuổi</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- QĐ2: Hạn thẻ độc giả -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+          <label class="block font-bold text-slate-800 mb-1">
+            QĐ2: Thời hạn giá trị thẻ độc giả (tháng)
+          </label>
+          <p class="text-[11px] text-slate-500 mb-2">Thẻ độc giả có giá trị sử dụng trong M tháng kể từ ngày cấp.</p>
+          <div class="flex items-center gap-2">
+            <input type="number" name="card_valid_months" min="1" max="60"
+              value="<%= systemRules.card_valid_months || 6 %>"
+              class="w-32 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:ring-2 focus:ring-blue-500" />
+            <span class="text-slate-500 font-semibold">tháng</span>
+          </div>
+        </div>
+
+        <!-- QĐ3: Số sách mượn tối đa -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+          <label class="block font-bold text-slate-800 mb-1">
+            QĐ3: Số sách mượn tối đa cùng lúc
+          </label>
+          <p class="text-[11px] text-slate-500 mb-2">Mỗi độc giả được mượn tối đa K cuốn sách cùng lúc.</p>
+          <div class="flex items-center gap-2">
+            <input type="number" name="max_borrow_books" min="1" max="20"
+              value="<%= systemRules.max_borrow_books || 5 %>"
+              class="w-32 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:ring-2 focus:ring-blue-500" />
+            <span class="text-slate-500 font-semibold">cuốn sách</span>
+          </div>
+        </div>
+
+        <!-- QĐ3: Số ngày mượn tối đa -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+          <label class="block font-bold text-slate-800 mb-1">
+            QĐ3: Số ngày mượn tối đa cho mỗi lần mượn
+          </label>
+          <p class="text-[11px] text-slate-500 mb-2">Thời gian từ lúc mượn đến hạn trả sách tối đa D ngày.</p>
+          <div class="flex items-center gap-2">
+            <input type="number" name="max_borrow_days" min="1" max="90"
+              value="<%= systemRules.max_borrow_days || 14 %>"
+              class="w-32 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:ring-2 focus:ring-blue-500" />
+            <span class="text-slate-500 font-semibold">ngày</span>
+          </div>
+        </div>
+
+        <!-- QĐ4: Tiền phạt mỗi ngày trễ hạn -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+          <label class="block font-bold text-slate-800 mb-1">
+            QĐ4: Tiền phạt trả trễ mỗi ngày (VNĐ/ngày)
+          </label>
+          <p class="text-[11px] text-slate-500 mb-2">Mỗi ngày trễ hạn sẽ bị phạt P đồng cho mỗi cuốn sách.</p>
+          <div class="flex items-center gap-2">
+            <input type="number" name="fine_per_day" min="100" step="500"
+              value="<%= systemRules.fine_per_day || 1000 %>"
+              class="w-32 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-red-600 focus:ring-2 focus:ring-blue-500" />
+            <span class="text-slate-500 font-semibold">VNĐ / ngày / cuốn</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Group 2: Library Profile Information -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+      <h3 class="font-bold text-slate-800 text-base mb-4 flex items-center gap-2">
+        <i class="fa-solid fa-building text-blue-600"></i> Thông Tin Cơ Quan Thư Viện
+      </h3>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Tên Thư Viện</label>
+          <input type="text" name="library_name" value="<%= systemRules.library_name || '' %>"
+            class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500" />
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Số Điện Thoại</label>
+          <input type="text" name="library_phone" value="<%= systemRules.library_phone || '' %>"
+            class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500" />
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Địa Chỉ Thư Viện</label>
+          <input type="text" name="library_address" value="<%= systemRules.library_address || '' %>"
+            class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500" />
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Email Liên Hệ</label>
+          <input type="email" name="library_email" value="<%= systemRules.library_email || '' %>"
+            class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500" />
+        </div>
+      </div>
+    </div>
+
+    <div class="flex justify-end">
+      <button type="submit" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs shadow-md transition flex items-center gap-2">
+        <i class="fa-solid fa-floppy-disk"></i>
+        <span>Lưu Toàn Bộ Cấu Hình Quy Định</span>
+      </button>
+    </div>
+  </form>
+
+  <!-- Categories & Reader Types Management -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Categories List (QĐ1) -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="font-bold text-slate-800 text-sm">Danh Mục Thể Loại Sách (QĐ1)</h3>
+          <p class="text-[11px] text-slate-400">Các thể loại sách hợp lệ được tiếp nhận</p>
+        </div>
+      </div>
+
+      <div class="space-y-2 mb-4 max-h-56 overflow-y-auto">
+        <% categories.forEach(c => { %>
+          <div class="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs">
+            <div>
+              <span class="font-mono font-bold text-blue-700 mr-2">[<%= c.code %>]</span>
+              <span class="font-semibold text-slate-800"><%= c.name %></span>
+            </div>
+            <span class="text-[10px] text-slate-400 truncate max-w-[150px]"><%= c.description || '' %></span>
+          </div>
+        <% }) %>
+      </div>
+
+      <!-- Add Category Form -->
+      <form action="/rules/categories" method="POST" class="pt-3 border-t border-slate-100 flex gap-2">
+        <input type="text" name="code" placeholder="Mã (G, H...)" required maxlength="5"
+          class="w-20 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs uppercase" />
+        <input type="text" name="name" placeholder="Tên thể loại mới" required
+          class="flex-1 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs" />
+        <button type="submit" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-semibold">
+          Thêm
+        </button>
+      </form>
+    </div>
+
+    <!-- Reader Types List (QĐ2) -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="font-bold text-slate-800 text-sm">Danh Mục Loại Độc Giả (QĐ2)</h3>
+          <p class="text-[11px] text-slate-400">Quy định hạn mức mượn theo từng đối tượng</p>
+        </div>
+      </div>
+
+      <div class="space-y-2 mb-4 max-h-56 overflow-y-auto">
+        <% readerTypes.forEach(rt => { %>
+          <div class="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs">
+            <div>
+              <span class="font-mono font-bold text-indigo-700 mr-2">[<%= rt.code %>]</span>
+              <span class="font-semibold text-slate-800"><%= rt.name %></span>
+            </div>
+            <span class="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+              Tối đa <%= rt.max_borrow_limit %> cuốn
+            </span>
+          </div>
+        <% }) %>
+      </div>
+
+      <!-- Add Reader Type Form -->
+      <form action="/rules/reader-types" method="POST" class="pt-3 border-t border-slate-100 flex gap-2">
+        <input type="text" name="code" placeholder="Mã (W, V...)" required maxlength="5"
+          class="w-20 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs uppercase" />
+        <input type="text" name="name" placeholder="Tên loại độc giả" required
+          class="flex-1 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs" />
+        <input type="number" name="max_borrow_limit" value="5" min="1" max="20"
+          class="w-16 px-2 py-1.5 border border-slate-200 rounded-lg text-xs" title="Hạn mức mượn" />
+        <button type="submit" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-semibold">
+          Thêm
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/layout-end') %>

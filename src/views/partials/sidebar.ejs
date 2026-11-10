@@ -1,0 +1,113 @@
+<aside class="w-64 bg-slate-900 text-slate-200 min-h-screen flex flex-col shadow-xl z-20 transition-all duration-300">
+  <!-- Brand Header -->
+  <div class="h-16 flex items-center px-6 bg-slate-950 border-b border-slate-800 gap-3">
+    <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-md">
+      <i class="fa-solid fa-book-bookmark text-lg"></i>
+    </div>
+    <div class="overflow-hidden">
+      <h1 class="font-bold text-white text-base tracking-wide truncate"><%= libraryName %></h1>
+      <p class="text-xs text-slate-400">Đồ Án TKPM Chuẩn QĐ</p>
+    </div>
+  </div>
+
+  <!-- User Short Info -->
+  <div class="px-5 py-4 border-b border-slate-800 flex items-center gap-3 bg-slate-900/60">
+    <div class="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-blue-400 font-bold border border-slate-600">
+      <i class="fa-solid fa-user"></i>
+    </div>
+    <div class="truncate">
+      <div class="font-semibold text-sm text-slate-100 truncate"><%= currentUser ? currentUser.fullname : 'Khách' %></div>
+      <div class="text-xs flex items-center gap-1.5 text-slate-400">
+        <span class="inline-block w-2 h-2 rounded-full <%= currentUser && currentUser.role === 'admin' ? 'bg-amber-400' : (currentUser && currentUser.role === 'librarian' ? 'bg-blue-400' : 'bg-emerald-400') %>"></span>
+        <span class="uppercase tracking-wider font-medium text-[10px]">
+          <%= currentUser ? (currentUser.role === 'admin' ? 'Quản Trị Viên' : (currentUser.role === 'librarian' ? 'Thủ Thư' : 'Độc Giả')) : 'Khách' %>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Menu -->
+  <nav class="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto text-sm">
+    <% if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'librarian')) { %>
+      <a href="/dashboard" class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition <%= currentPath === '/dashboard' ? 'bg-blue-600 text-white font-medium shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white' %>">
+        <i class="fa-solid fa-chart-pie w-5 text-center text-slate-400 group-hover:text-white"></i>
+        <span>Bảng điều khiển</span>
+      </a>
+    <% } %>
+
+    <div class="pt-2 pb-1 px-3 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
+      Quản lý nghiệp vụ
+    </div>
+
+    <a href="/books" class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition <%= currentPath.startsWith('/books') ? 'bg-blue-600 text-white font-medium shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white' %>">
+      <i class="fa-solid fa-book w-5 text-center"></i>
+      <span>Quản lý Sách (QĐ1)</span>
+    </a>
+
+    <% if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'librarian')) { %>
+      <a href="/readers" class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition <%= currentPath.startsWith('/readers') ? 'bg-blue-600 text-white font-medium shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white' %>">
+        <i class="fa-solid fa-address-card w-5 text-center"></i>
+        <span>Thẻ Độc Giả (QĐ2)</span>
+      </a>
+
+      <a href="/borrow" class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition <%= currentPath === '/borrow' || currentPath.startsWith('/borrow/create') || (currentPath.startsWith('/borrow/') && !currentPath.includes('overdue')) ? 'bg-blue-600 text-white font-medium shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white' %>">
+        <i class="fa-solid fa-arrow-right-arrow-left w-5 text-center"></i>
+        <span>Mượn - Trả (QĐ3, QĐ4)</span>
+      </a>
+
+      <a href="/borrow/overdue" class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition <%= currentPath === '/borrow/overdue' ? 'bg-amber-600 text-white font-medium shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white' %>">
+        <i class="fa-solid fa-triangle-exclamation w-5 text-center text-amber-400"></i>
+        <span>Sách quá hạn</span>
+      </a>
+
+      <a href="/fines" class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition <%= currentPath.startsWith('/fines') ? 'bg-blue-600 text-white font-medium shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white' %>">
+        <i class="fa-solid fa-receipt w-5 text-center"></i>
+        <span>Thu Tiền Phạt (QĐ5)</span>
+      </a>
+
+      <div class="pt-3 pb-1 px-3 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
+        Báo cáo & Thống kê
+      </div>
+
+      <a href="/reports/categories" class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition <%= currentPath.includes('/reports/categories') ? 'bg-blue-600 text-white font-medium shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white' %>">
+        <i class="fa-solid fa-chart-column w-5 text-center"></i>
+        <span>Mượn theo Thể loại (QĐ6)</span>
+      </a>
+
+      <a href="/reports/overdue" class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition <%= currentPath.includes('/reports/overdue') ? 'bg-blue-600 text-white font-medium shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white' %>">
+        <i class="fa-solid fa-clock-rotate-left w-5 text-center"></i>
+        <span>Thống kê Sách Trễ (QĐ6)</span>
+      </a>
+    <% } %>
+
+    <% if (currentUser && currentUser.role === 'admin') { %>
+      <div class="pt-3 pb-1 px-3 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
+        Hệ thống & Cấu hình
+      </div>
+
+      <a href="/rules" class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition <%= currentPath === '/rules' ? 'bg-blue-600 text-white font-medium shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white' %>">
+        <i class="fa-solid fa-sliders w-5 text-center text-amber-400"></i>
+        <span>Cấu hình Quy định</span>
+      </a>
+
+      <a href="/users" class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition <%= currentPath === '/users' ? 'bg-blue-600 text-white font-medium shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white' %>">
+        <i class="fa-solid fa-users-gear w-5 text-center"></i>
+        <span>Quản lý Tài khoản</span>
+      </a>
+    <% } %>
+  </nav>
+
+  <!-- Footer Actions -->
+  <div class="p-3 border-t border-slate-800 bg-slate-950">
+    <div class="flex items-center justify-between">
+      <a href="/profile" class="flex items-center gap-2 text-xs text-slate-400 hover:text-white px-2 py-1.5 rounded-md hover:bg-slate-800 transition">
+        <i class="fa-solid fa-gear"></i>
+        <span>Cá nhân</span>
+      </a>
+      <a href="/logout" class="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 px-2.5 py-1.5 rounded-md hover:bg-red-500/10 transition">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+        <span>Đăng xuất</span>
+      </a>
+    </div>
+  </div>
+</aside>

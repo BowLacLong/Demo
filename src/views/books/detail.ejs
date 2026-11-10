@@ -1,0 +1,213 @@
+<%- include('../partials/layout-start') %>
+
+<div class="space-y-6">
+  <!-- Top Navigation & Actions -->
+  <div class="flex items-center justify-between">
+    <a href="/books" class="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 transition">
+      <i class="fa-solid fa-arrow-left"></i> Quay lại danh mục sách
+    </a>
+
+    <% if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'librarian')) { %>
+      <div class="flex items-center gap-2">
+        <a href="/books/<%= book.id %>/edit" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition">
+          <i class="fa-solid fa-pen-to-square mr-1"></i> Chỉnh sửa
+        </a>
+        <% if (currentUser.role === 'admin') { %>
+          <form action="/books/<%= book.id %>/delete" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn xoá đầu sách này? Hành động không thể hoàn tác!');">
+            <button type="submit" class="px-3.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-semibold transition">
+              <i class="fa-solid fa-trash mr-1"></i> Xoá sách
+            </button>
+          </form>
+        <% } %>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- Book Main Overview Card -->
+  <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs p-6 md:p-8">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+      <!-- Cover Column -->
+      <div class="md:col-span-1 flex flex-col items-center">
+        <img src="<%= book.cover_image || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400' %>" 
+             alt="<%= book.title %>" class="w-full max-w-[220px] rounded-2xl shadow-md object-cover border border-slate-100" />
+        
+        <div class="mt-4 w-full text-center">
+          <span class="inline-block px-3 py-1 rounded-full text-xs font-bold <%= book.available_copies > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800' %>">
+            <%= book.available_copies > 0 ? `Sẵn sàng cho mượn (${book.available_copies}/${book.total_copies})` : 'Hết bản sách sẵn có' %>
+          </span>
+        </div>
+      </div>
+
+      <!-- Metadata Column -->
+      <div class="md:col-span-3 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center gap-2 mb-2">
+            <span class="px-2.5 py-0.5 rounded-md text-xs font-bold bg-blue-100 text-blue-800">
+              [<%= book.category_code %>] <%= book.category_name %>
+            </span>
+            <span class="text-xs text-slate-400">Mã: B<%= String(book.id).padStart(4, '0') %></span>
+          </div>
+
+          <h1 class="text-2xl font-black text-slate-800 tracking-tight"><%= book.title %></h1>
+          
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-6 text-xs">
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+              <span class="text-slate-400 block mb-0.5">Tác giả</span>
+              <span class="font-bold text-slate-800"><%= book.author_name || 'Chưa cập nhật' %></span>
+            </div>
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+              <span class="text-slate-400 block mb-0.5">Nhà xuất bản</span>
+              <span class="font-bold text-slate-800"><%= book.publisher_name || 'Chưa cập nhật' %></span>
+            </div>
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+              <span class="text-slate-400 block mb-0.5">Năm xuất bản</span>
+              <span class="font-bold text-slate-800"><%= book.publish_year %></span>
+            </div>
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+              <span class="text-slate-400 block mb-0.5">Trị giá sách</span>
+              <span class="font-bold text-blue-600"><%= (book.price || 0).toLocaleString('vi-VN') %> VNĐ</span>
+            </div>
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+              <span class="text-slate-400 block mb-0.5">Mã ISBN</span>
+              <span class="font-bold text-slate-800"><%= book.isbn || 'Không có' %></span>
+            </div>
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+              <span class="text-slate-400 block mb-0.5">Ngày tiếp nhận</span>
+              <span class="font-bold text-slate-800"><%= book.entry_date %></span>
+            </div>
+          </div>
+
+          <!-- Summary -->
+          <div class="mt-6">
+            <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Tóm tắt nội dung</h4>
+            <p class="text-xs text-slate-600 leading-relaxed bg-slate-50/60 p-3.5 rounded-xl border border-slate-100">
+              <%= book.summary || 'Chưa có thông tin tóm tắt nội dung cho sách này.' %>
+            </p>
+          </div>
+        </div>
+
+        <% if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'librarian')) { %>
+          <div class="mt-6 pt-4 border-t border-slate-100 flex items-center gap-3">
+            <button type="button" onclick="document.getElementById('addCopiesModal').classList.remove('hidden')"
+              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition flex items-center gap-1.5">
+              <i class="fa-solid fa-plus-circle"></i> Bổ sung thêm bản sách
+            </button>
+            <a href="/borrow/create" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold transition flex items-center gap-1.5">
+              <i class="fa-solid fa-arrow-right-arrow-left"></i> Lập phiếu mượn sách này
+            </a>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Book Copies (Bản sách cá biệt) Table -->
+  <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h3 class="text-base font-bold text-slate-800">Danh Sách Bản Sách Cá Biệt (Book Copies)</h3>
+        <p class="text-xs text-slate-500">Mỗi bản sách có mã vạch cá biệt riêng để quản lý xuất / nhập kho mượn trả</p>
+      </div>
+      <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+        Tổng số: <strong><%= book.copies ? book.copies.length : 0 %></strong> bản
+      </span>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs">
+        <thead class="bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider border-b border-slate-200">
+          <tr>
+            <th class="py-2.5 px-3">STT</th>
+            <th class="py-2.5 px-3">Mã Vạch (Barcode)</th>
+            <th class="py-2.5 px-3">Vị Trí Kệ</th>
+            <th class="py-2.5 px-3">Trạng Thái</th>
+            <th class="py-2.5 px-3">Ghi Chú</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <% if (book.copies && book.copies.length > 0) { %>
+            <% book.copies.forEach((cp, idx) => { %>
+              <tr class="hover:bg-slate-50 transition">
+                <td class="py-3 px-3 text-slate-400 font-mono"><%= idx + 1 %></td>
+                <td class="py-3 px-3">
+                  <span class="font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
+                    <i class="fa-solid fa-barcode mr-1"></i> <%= cp.barcode %>
+                  </span>
+                </td>
+                <td class="py-3 px-3 text-slate-700 font-medium"><%= cp.location || 'Kệ chung' %></td>
+                <td class="py-3 px-3">
+                  <% if (cp.status === 'available') { %>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-800">
+                      Có sẵn
+                    </span>
+                  <% } else if (cp.status === 'borrowed') { %>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
+                      Đang mượn
+                    </span>
+                  <% } else if (cp.status === 'lost') { %>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-800">
+                      Bị mất
+                    </span>
+                  <% } else { %>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                      Hỏng
+                    </span>
+                  <% } %>
+                </td>
+                <td class="py-3 px-3 text-slate-500"><%= cp.note || 'Bản sách tiếp nhận' %></td>
+              </tr>
+            <% }) %>
+          <% } else { %>
+            <tr>
+              <td colspan="5" class="py-6 text-center text-slate-400">Chưa có bản sách nào</td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Bổ sung bản sách -->
+<div id="addCopiesModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
+  <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100">
+    <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+      <h3 class="font-bold text-slate-800 text-sm">Bổ Sung Thêm Bản Sách</h3>
+      <button type="button" onclick="document.getElementById('addCopiesModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <form action="/books/<%= book.id %>/copies" method="POST" class="space-y-4">
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1">Số lượng bản sách thêm</label>
+        <input type="number" name="count" min="1" max="20" value="2" required
+          class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-hidden" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1">Vị trí kệ xếp sách</label>
+        <input type="text" name="location" value="Kệ 1 - Ngăn 2"
+          class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-hidden" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1">Ghi chú tiếp nhận</label>
+        <input type="text" name="note" placeholder="Nhập thêm bổ sung đợt 2"
+          class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-hidden" />
+      </div>
+
+      <div class="pt-3 flex items-center justify-end gap-2">
+        <button type="button" onclick="document.getElementById('addCopiesModal').classList.add('hidden')"
+          class="px-4 py-2 border border-slate-200 rounded-xl text-xs text-slate-700 hover:bg-slate-50">
+          Hủy
+        </button>
+        <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs">
+          Xác nhận thêm
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('../partials/layout-end') %>

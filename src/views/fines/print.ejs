@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Phiếu Thu Tiền Phạt - <%= receipt.receipt_code %></title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 p-6 sm:p-12 font-sans flex flex-col items-center justify-center min-h-screen">
+  <!-- Print controls -->
+  <div class="max-w-xl w-full mb-4 flex justify-between items-center no-print">
+    <button onclick="window.close()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-xl transition">
+      <i class="fa-solid fa-arrow-left mr-1"></i> Đóng cửa sổ
+    </button>
+    <button onclick="window.print()" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md transition">
+      <i class="fa-solid fa-print mr-1.5"></i> In Biên Lai Này
+    </button>
+  </div>
+
+  <!-- The Printable Receipt Voucher -->
+  <div class="max-w-xl w-full bg-white p-8 rounded-3xl shadow-xl border border-slate-200 text-slate-800">
+    <div class="border-b-2 border-dashed border-slate-300 pb-6 mb-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="font-extrabold text-base uppercase tracking-wider text-slate-800"><%= libraryName %></h2>
+          <p class="text-xs text-slate-500">Đơn vị quản trị thông tin thư viện</p>
+        </div>
+        <div class="text-right">
+          <span class="font-mono font-bold text-sm text-slate-700">Mẫu: QĐ5-TT</span>
+          <p class="text-[11px] text-slate-400">Số: <%= receipt.receipt_code %></p>
+        </div>
+      </div>
+
+      <div class="text-center mt-6">
+        <h1 class="text-xl font-black text-slate-900 tracking-tight uppercase">Phiếu Thu Tiền Phạt</h1>
+        <p class="text-xs text-slate-500 mt-1">Ngày <%= new Date(receipt.receipt_date).getDate() %> tháng <%= new Date(receipt.receipt_date).getMonth() + 1 %> năm <%= new Date(receipt.receipt_date).getFullYear() %></p>
+      </div>
+    </div>
+
+    <!-- Reader information -->
+    <div class="space-y-3 text-xs mb-6">
+      <div class="flex justify-between border-b border-slate-100 py-1">
+        <span class="text-slate-500">Họ tên độc giả:</span>
+        <span class="font-bold text-slate-800"><%= receipt.reader_name %></span>
+      </div>
+      <div class="flex justify-between border-b border-slate-100 py-1">
+        <span class="text-slate-500">Mã thẻ độc giả:</span>
+        <span class="font-mono font-bold text-slate-800"><%= receipt.reader_code %></span>
+      </div>
+      <div class="flex justify-between border-b border-slate-100 py-1">
+        <span class="text-slate-500">Địa chỉ:</span>
+        <span class="text-slate-700"><%= receipt.reader_address %></span>
+      </div>
+      <div class="flex justify-between border-b border-slate-100 py-1">
+        <span class="text-slate-500">Lý do nộp phạt:</span>
+        <span class="text-slate-700"><%= receipt.note || 'Phạt trả sách trễ hạn / bồi hoàn hư hại' %></span>
+      </div>
+      <div class="flex justify-between border-b border-slate-100 py-1">
+        <span class="text-slate-500">Tổng nợ trước khi thu:</span>
+        <span class="font-semibold text-slate-800"><%= receipt.total_debt.toLocaleString('vi-VN') %> VNĐ</span>
+      </div>
+      <div class="flex justify-between border-b border-slate-100 py-1.5 bg-emerald-50 px-2 rounded-lg">
+        <span class="font-bold text-emerald-900">Số tiền thực tế thu:</span>
+        <span class="font-black text-emerald-700 text-sm"><%= receipt.collected_amount.toLocaleString('vi-VN') %> VNĐ</span>
+      </div>
+      <div class="flex justify-between border-b border-slate-100 py-1">
+        <span class="text-slate-500">Còn lại:</span>
+        <span class="font-bold text-slate-800"><%= receipt.remaining_debt.toLocaleString('vi-VN') %> VNĐ</span>
+      </div>
+    </div>
+
+    <!-- Signatures -->
+    <div class="grid grid-cols-2 text-center text-xs mt-10 pt-4 border-t border-slate-200">
+      <div>
+        <span class="font-bold text-slate-700 block">Người Nộp Tiền</span>
+        <span class="text-[10px] text-slate-400 block mb-12">(Ký và ghi rõ họ tên)</span>
+        <span class="font-semibold text-slate-800"><%= receipt.reader_name %></span>
+      </div>
+      <div>
+        <span class="font-bold text-slate-700 block">Thủ Thư Thu Tiền</span>
+        <span class="text-[10px] text-slate-400 block mb-12">(Ký và đóng dấu)</span>
+        <span class="font-semibold text-slate-800"><%= receipt.creator_name || 'Nguyễn Thị Mai' %></span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

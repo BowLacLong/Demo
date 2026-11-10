@@ -1,0 +1,140 @@
+<%- include('../partials/layout-start') %>
+
+<div class="space-y-6">
+  <!-- Top Bar: Title & Actions -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h2 class="text-xl font-bold text-slate-800">Quản Lý Độc Giả & Thẻ Thư Viện (QĐ2)</h2>
+      <p class="text-xs text-slate-500">Cấp thẻ độc giả theo độ tuổi và thời hạn quy định, quản lý mượn trả và công nợ</p>
+    </div>
+
+    <div class="flex items-center gap-2.5">
+      <a href="/readers/export" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition flex items-center gap-1.5">
+        <i class="fa-solid fa-file-excel"></i>
+        <span>Xuất Excel</span>
+      </a>
+      <a href="/readers/create" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition flex items-center gap-1.5">
+        <i class="fa-solid fa-user-plus"></i>
+        <span>Lập Thẻ Độc Giả Mới (QĐ2)</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Search & Filter Bar -->
+  <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+    <form action="/readers" method="GET" class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+      <div class="relative sm:col-span-2">
+        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+          <i class="fa-solid fa-magnifying-glass text-xs"></i>
+        </span>
+        <input type="text" name="search" value="<%= filters.search || '' %>" placeholder="Tìm theo tên độc giả, mã thẻ DG..., email, số điện thoại..."
+          class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500" />
+      </div>
+
+      <div>
+        <select name="type_id" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500">
+          <option value="">-- Tất cả loại độc giả --</option>
+          <% readerTypes.forEach(rt => { %>
+            <option value="<%= rt.id %>" <%= filters.type_id == rt.id ? 'selected' : '' %>>
+              [<%= rt.code %>] <%= rt.name %>
+            </option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div class="flex items-center gap-2 justify-end">
+        <button type="submit" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold transition">
+          <i class="fa-solid fa-filter mr-1"></i> Lọc
+        </button>
+        <% if (filters.search || filters.type_id) { %>
+          <a href="/readers" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs transition">
+            Xóa lọc
+          </a>
+        <% } %>
+      </div>
+    </form>
+  </div>
+
+  <!-- Readers Table -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs">
+        <thead class="bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider border-b border-slate-200">
+          <tr>
+            <th class="py-3 px-4">Mã Thẻ</th>
+            <th class="py-3 px-4">Họ và Tên</th>
+            <th class="py-3 px-4">Loại Độc Giả</th>
+            <th class="py-3 px-4">Ngày Hết Hạn</th>
+            <th class="py-3 px-4">Đang Mượn</th>
+            <th class="py-3 px-4">Tổng Nợ Phạt</th>
+            <th class="py-3 px-4">Trạng Thái</th>
+            <th class="py-3 px-4 text-right">Thao Tác</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <% if (readers && readers.length > 0) { %>
+            <% readers.forEach(r => { %>
+              <tr class="hover:bg-slate-50/80 transition">
+                <td class="py-3.5 px-4 font-mono font-bold text-blue-600">
+                  <a href="/readers/<%= r.id %>" class="hover:underline flex items-center gap-1.5">
+                    <i class="fa-solid fa-id-card text-slate-400"></i>
+                    <span><%= r.reader_code %></span>
+                  </a>
+                </td>
+                <td class="py-3.5 px-4">
+                  <div class="font-bold text-slate-800 text-sm"><%= r.fullname %></div>
+                  <div class="text-[11px] text-slate-400"><%= r.email %> &bull; <%= r.phone || 'N/A' %></div>
+                </td>
+                <td class="py-3.5 px-4">
+                  <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700">
+                    [<%= r.type_code %>] <%= r.type_name %>
+                  </span>
+                </td>
+                <td class="py-3.5 px-4 font-medium">
+                  <% const isExpired = new Date(r.expiry_date) < new Date(); %>
+                  <span class="<%= isExpired ? 'text-red-600 font-bold' : 'text-slate-700' %>">
+                    <%= r.expiry_date %>
+                  </span>
+                  <% if (isExpired) { %>
+                    <span class="block text-[10px] text-red-500 font-semibold">Hết hạn thẻ</span>
+                  <% } %>
+                </td>
+                <td class="py-3.5 px-4">
+                  <span class="px-2.5 py-0.5 rounded-full text-xs font-bold <%= r.currently_borrowing > 0 ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-slate-50 text-slate-500' %>">
+                    <%= r.currently_borrowing %> / <%= r.max_borrow_limit %> cuốn
+                  </span>
+                </td>
+                <td class="py-3.5 px-4 font-bold <%= r.total_debt > 0 ? 'text-red-600' : 'text-slate-400' %>">
+                  <%= (r.total_debt || 0).toLocaleString('vi-VN') %> đ
+                </td>
+                <td class="py-3.5 px-4">
+                  <% if (r.status === 'active' && !isExpired) { %>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-800">Hoạt động</span>
+                  <% } else { %>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-800">Khóa / Hết hạn</span>
+                  <% } %>
+                </td>
+                <td class="py-3.5 px-4 text-right">
+                  <div class="flex items-center justify-end gap-2">
+                    <a href="/readers/<%= r.id %>" class="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-medium transition" title="Chi tiết thẻ">
+                      Xem thẻ
+                    </a>
+                    <a href="/borrow/create?reader_id=<%= r.id %>" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-medium transition" title="Cho mượn">
+                      Mượn
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            <% }) %>
+          <% } else { %>
+            <tr>
+              <td colspan="8" class="text-center py-8 text-slate-400">Không tìm thấy độc giả nào</td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/layout-end') %>

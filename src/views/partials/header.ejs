@@ -1,0 +1,35 @@
+<header class="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between sticky top-0 z-10 shadow-xs">
+  <div class="flex items-center gap-3">
+    <button id="mobileSidebarToggle" class="md:hidden text-slate-600 hover:text-slate-900 focus:outline-hidden">
+      <i class="fa-solid fa-bars text-xl"></i>
+    </button>
+    <div class="font-bold text-slate-800 text-lg flex items-center gap-2">
+      <span><%= typeof title !== 'undefined' ? title : 'Quản Lý Thư Viện' %></span>
+    </div>
+  </div>
+
+  <div class="flex items-center gap-4">
+    <!-- Quick Search Shortcut -->
+    <a href="/books" class="hidden sm:flex items-center gap-2 text-xs text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full hover:bg-slate-200 transition">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <span>Tra cứu nhanh OPAC</span>
+    </a>
+
+    <!-- Overdue Notification Indicator -->
+    <% if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'librarian')) { %>
+      <a href="/borrow/overdue" title="Phiếu mượn quá hạn" class="relative p-2 text-slate-500 hover:text-amber-600 rounded-lg hover:bg-slate-100 transition">
+        <i class="fa-solid fa-bell text-lg"></i>
+      </a>
+    <% } %>
+
+    <!-- User Dropdown Profile -->
+    <div class="flex items-center gap-3 pl-2 border-l border-slate-200">
+      <a href="/profile" class="flex items-center gap-2 hover:opacity-80 transition">
+        <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+          <%= currentUser ? currentUser.fullname.charAt(0).toUpperCase() : 'U' %>
+        </div>
+        <span class="text-sm font-medium text-slate-700 hidden lg:inline-block"><%= currentUser ? currentUser.fullname : 'Tài khoản' %></span>
+      </a>
+    </div>
+  </div>
+</header>

@@ -1,0 +1,189 @@
+<%- include('../partials/layout-start') %>
+
+<div class="space-y-6">
+  <!-- Top Navigation & Actions -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <a href="/borrow" class="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 transition">
+      <i class="fa-solid fa-arrow-left"></i> Quay lại danh sách phiếu mượn
+    </a>
+
+    <div class="flex items-center gap-2">
+      <% if (ticket.status === 'borrowing' || ticket.status === 'partially_returned' || ticket.status === 'overdue') { %>
+        <button type="button" onclick="document.getElementById('extendTicketModal').classList.remove('hidden')"
+          class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition">
+          <i class="fa-solid fa-clock-rotate-left mr-1"></i> Gia hạn ngày trả
+        </button>
+        <a href="/borrow/<%= ticket.id %>/return" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition flex items-center gap-1.5">
+          <i class="fa-solid fa-arrow-turn-down"></i> Nhận Trả Sách (QĐ4)
+        </a>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Overdue Warning Alert -->
+  <% if (ticket.is_overdue) { %>
+    <div class="p-4 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-3">
+      <i class="fa-solid fa-triangle-exclamation text-red-600 text-xl mt-0.5 animate-bounce"></i>
+      <div class="text-xs text-red-900 leading-relaxed">
+        <span class="font-bold text-sm">Cảnh báo: Phiếu mượn đã quá hạn trả <%= ticket.overdue_days_count %> ngày!</span>
+        <p class="mt-0.5">Hạn trả là ngày <strong><%= ticket.due_date %></strong>. Theo QĐ4, tiền phạt trễ hạn ước tính hiện tại: <strong class="text-red-700 font-bold"><%= (ticket.current_potential_fine || 0).toLocaleString('vi-VN') %> VNĐ</strong>.</p>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- Ticket Header Card -->
+  <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-4 mb-4">
+      <div>
+        <div class="flex items-center gap-2">
+          <h2 class="text-xl font-black text-slate-800">Phiếu Mượn: <%= ticket.ticket_code %></h2>
+          <% if (ticket.status === 'borrowing' && !ticket.is_overdue) { %>
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">Đang mượn</span>
+          <% } else if (ticket.is_overdue || ticket.status === 'overdue') { %>
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800">Quá hạn</span>
+          <% } else if (ticket.status === 'partially_returned') { %>
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">Đã trả 1 phần</span>
+          <% } else { %>
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">Đã hoàn tất trả</span>
+          <% } %>
+        </div>
+        <p class="text-xs text-slate-400 mt-1">Lập bởi: <%= ticket.creator_name || 'Hệ thống' %> &bull; <%= ticket.note || 'Không có ghi chú' %></p>
+      </div>
+
+      <div class="text-right">
+        <div class="text-xs text-slate-400">Ngày mượn &bull; Hạn trả</div>
+        <div class="text-sm font-bold text-slate-800 mt-0.5">
+          <%= ticket.borrow_date %> &rarr; <span class="<%= ticket.is_overdue ? 'text-red-600 font-black' : 'text-blue-600' %>"><%= ticket.due_date %></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reader Info Snapshot -->
+    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs bg-slate-50 p-4 rounded-xl border border-slate-100">
+      <div>
+        <span class="text-slate-400 block mb-0.5">Độc giả</span>
+        <a href="/readers/<%= ticket.reader_id %>" class="font-bold text-slate-800 hover:text-blue-600">
+          <%= ticket.reader_name %>
+        </a>
+      </div>
+      <div>
+        <span class="text-slate-400 block mb-0.5">Mã thẻ thư viện</span>
+        <span class="font-mono font-bold text-slate-800"><%= ticket.reader_code %></span>
+      </div>
+      <div>
+        <span class="text-slate-400 block mb-0.5">Điện thoại liên hệ</span>
+        <span class="font-semibold text-slate-800"><%= ticket.reader_phone || 'N/A' %></span>
+      </div>
+      <div>
+        <span class="text-slate-400 block mb-0.5">Nợ phạt hiện tại</span>
+        <span class="font-bold <%= ticket.reader_debt > 0 ? 'text-red-600' : 'text-emerald-600' %>">
+          <%= (ticket.reader_debt || 0).toLocaleString('vi-VN') %> đ
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Borrowed Details Table -->
+  <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+    <h3 class="font-bold text-slate-800 text-base mb-4 flex items-center gap-2">
+      <i class="fa-solid fa-book-bookmark text-blue-600"></i> Danh Sách Cuốn Sách Trong Phiếu
+    </h3>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs">
+        <thead class="bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider border-b border-slate-200">
+          <tr>
+            <th class="py-2.5 px-3">Bản Sách</th>
+            <th class="py-2.5 px-3">Mã Vạch</th>
+            <th class="py-2.5 px-3">Vị Trí Kệ</th>
+            <th class="py-2.5 px-3">Trạng Thái</th>
+            <th class="py-2.5 px-3">Ngày Trả</th>
+            <th class="py-2.5 px-3">Trễ Hạn (QĐ4)</th>
+            <th class="py-2.5 px-3 text-right">Tiền Phạt</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <% (ticket.details || []).forEach(d => { %>
+            <tr class="hover:bg-slate-50 transition">
+              <td class="py-3 px-3">
+                <div class="flex items-center gap-3">
+                  <img src="<%= d.cover_image || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=100' %>" 
+                       class="w-8 h-11 object-cover rounded shadow-2xs" alt="" />
+                  <div>
+                    <a href="/books/<%= d.book_id %>" class="font-bold text-slate-800 hover:text-blue-600 block">
+                      <%= d.book_title %>
+                    </a>
+                    <span class="text-[10px] text-slate-400">Trị giá: <%= (d.book_price || 0).toLocaleString('vi-VN') %> đ</span>
+                  </div>
+                </div>
+              </td>
+              <td class="py-3 px-3 font-mono font-bold text-slate-700"><%= d.barcode %></td>
+              <td class="py-3 px-3 text-slate-600"><%= d.location %></td>
+              <td class="py-3 px-3">
+                <% if (d.status === 'borrowed') { %>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">Đang giữ</span>
+                <% } else if (d.status === 'returned') { %>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-800">Đã trả</span>
+                <% } else if (d.status === 'lost') { %>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-800">Làm mất</span>
+                <% } else { %>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Hỏng sách</span>
+                <% } %>
+              </td>
+              <td class="py-3 px-3 text-slate-600"><%= d.return_date || 'Chưa trả' %></td>
+              <td class="py-3 px-3">
+                <% if (d.overdue_days > 0) { %>
+                  <span class="font-bold text-red-600"><%= d.overdue_days %> ngày</span>
+                <% } else { %>
+                  <span class="text-slate-400">Đúng hạn</span>
+                <% } %>
+              </td>
+              <td class="py-3 px-3 text-right font-bold <%= d.fine_amount > 0 ? 'text-red-600' : 'text-slate-400' %>">
+                <%= (d.fine_amount || 0).toLocaleString('vi-VN') %> đ
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Gia Hạn Phiếu Mượn -->
+<div id="extendTicketModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
+  <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100">
+    <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+      <h3 class="font-bold text-slate-800 text-sm">Gia Hạn Hạn Trả Sách</h3>
+      <button type="button" onclick="document.getElementById('extendTicketModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <form action="/borrow/<%= ticket.id %>/extend" method="POST" class="space-y-4">
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1">Gia hạn thêm số ngày</label>
+        <select name="extra_days" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-hidden">
+          <option value="7">Thêm +7 ngày (1 tuần)</option>
+          <option value="14">Thêm +14 ngày (2 tuần)</option>
+          <option value="3">Thêm +3 ngày</option>
+        </select>
+      </div>
+
+      <p class="text-xs text-slate-500">
+        Lưu ý: Chỉ áp dụng gia hạn cho phiếu mượn chưa bị quá hạn theo quy định.
+      </p>
+
+      <div class="pt-3 flex items-center justify-end gap-2">
+        <button type="button" onclick="document.getElementById('extendTicketModal').classList.add('hidden')"
+          class="px-4 py-2 border border-slate-200 rounded-xl text-xs text-slate-700 hover:bg-slate-50">
+          Hủy
+        </button>
+        <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs">
+          Xác nhận gia hạn
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('../partials/layout-end') %>

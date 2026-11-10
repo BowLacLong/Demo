@@ -1,0 +1,69 @@
+<%- include('../partials/layout-start') %>
+
+<div class="space-y-6">
+  <!-- Top Bar -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-xl font-bold text-red-700 flex items-center gap-2">
+        <i class="fa-solid fa-triangle-exclamation"></i> Danh Sách Phiếu Mượn Quá Hạn
+      </h2>
+      <p class="text-xs text-slate-500">Các phiếu mượn chưa hoàn trả sách và đã vượt quá ngày hẹn trả</p>
+    </div>
+
+    <a href="/reports/overdue" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold transition">
+      <i class="fa-solid fa-chart-line mr-1"></i> Báo Cáo Sách Trễ (QĐ6.2)
+    </a>
+  </div>
+
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs">
+        <thead class="bg-red-50 text-red-900 font-semibold uppercase tracking-wider border-b border-red-200">
+          <tr>
+            <th class="py-3 px-4">Mã Phiếu</th>
+            <th class="py-3 px-4">Độc Giả</th>
+            <th class="py-3 px-4">Điện Thoại</th>
+            <th class="py-3 px-4">Ngày Mượn</th>
+            <th class="py-3 px-4">Hạn Trả</th>
+            <th class="py-3 px-4">Số Cuốn Quá Hạn</th>
+            <th class="py-3 px-4 text-right">Thao Tác</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <% if (overdueTickets && overdueTickets.length > 0) { %>
+            <% overdueTickets.forEach(t => { %>
+              <tr class="hover:bg-red-50/30 transition">
+                <td class="py-3.5 px-4 font-mono font-bold text-red-600">
+                  <a href="/borrow/<%= t.id %>" class="hover:underline"><%= t.ticket_code %></a>
+                </td>
+                <td class="py-3.5 px-4 font-bold text-slate-800"><%= t.reader_name %></td>
+                <td class="py-3.5 px-4 text-slate-600 font-mono"><%= t.reader_phone || 'N/A' %></td>
+                <td class="py-3.5 px-4 text-slate-600"><%= t.borrow_date %></td>
+                <td class="py-3.5 px-4 font-bold text-red-600"><%= t.due_date %></td>
+                <td class="py-3.5 px-4">
+                  <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800">
+                    <%= t.overdue_items_count %> cuốn
+                  </span>
+                </td>
+                <td class="py-3.5 px-4 text-right">
+                  <a href="/borrow/<%= t.id %>/return" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-medium shadow-2xs">
+                    Thu hồi / Trả sách
+                  </a>
+                </td>
+              </tr>
+            <% }) %>
+          <% } else { %>
+            <tr>
+              <td colspan="7" class="text-center py-8 text-slate-400">
+                <i class="fa-solid fa-circle-check text-green-500 text-2xl mb-1 block"></i>
+                Tuyệt vời! Hiện tại không có cuốn sách nào bị quá hạn trả.
+              </td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/layout-end') %>

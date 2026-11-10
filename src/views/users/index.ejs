@@ -1,0 +1,167 @@
+<%- include('../partials/layout-start') %>
+
+<div class="space-y-6">
+  <!-- Top Bar -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h2 class="text-xl font-bold text-slate-800">Quản Lý Người Dùng & Phân Quyền (RBAC)</h2>
+      <p class="text-xs text-slate-500">Quản lý tài khoản đăng nhập của Quản trị viên, Thủ thư và Độc giả tra cứu</p>
+    </div>
+
+    <button type="button" onclick="document.getElementById('createUserModal').classList.remove('hidden')"
+      class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition flex items-center gap-1.5">
+      <i class="fa-solid fa-user-plus"></i>
+      <span>Tạo Tài Khoản Mới</span>
+    </button>
+  </div>
+
+  <!-- Users Table -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs">
+        <thead class="bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider border-b border-slate-200">
+          <tr>
+            <th class="py-3 px-4">Tài Khoản</th>
+            <th class="py-3 px-4">Họ và Tên</th>
+            <th class="py-3 px-4">Email</th>
+            <th class="py-3 px-4">Vai Trò (Role)</th>
+            <th class="py-3 px-4">Liên Kết Độc Giả</th>
+            <th class="py-3 px-4">Trạng Thái</th>
+            <th class="py-3 px-4 text-right">Thao Tác</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <% (users || []).forEach(u => { %>
+            <tr class="hover:bg-slate-50/80 transition">
+              <td class="py-3.5 px-4 font-mono font-bold text-slate-800">
+                <%= u.username %>
+              </td>
+              <td class="py-3.5 px-4 font-bold text-slate-800"><%= u.fullname %></td>
+              <td class="py-3.5 px-4 text-slate-600"><%= u.email || 'N/A' %></td>
+              <td class="py-3.5 px-4">
+                <% if (u.role === 'admin') { %>
+                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Quản Trị Viên (Admin)</span>
+                <% } else if (u.role === 'librarian') { %>
+                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">Thủ Thư (Librarian)</span>
+                <% } else { %>
+                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Độc Giả (Reader)</span>
+                <% } %>
+              </td>
+              <td class="py-3.5 px-4 text-slate-600">
+                <% if (u.linked_reader_name) { %>
+                  <span class="font-medium text-slate-800"><%= u.linked_reader_name %> (<%= u.reader_code %>)</span>
+                <% } else { %>
+                  <span class="text-slate-400">Không</span>
+                <% } %>
+              </td>
+              <td class="py-3.5 px-4">
+                <% if (u.is_active) { %>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-800">Hoạt động</span>
+                <% } else { %>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-800">Vô hiệu hóa</span>
+                <% } %>
+              </td>
+              <td class="py-3.5 px-4 text-right">
+                <div class="flex items-center justify-end gap-1.5">
+                  <form action="/users/<%= u.id %>/reset-password" method="POST" onsubmit="return confirm('Đặt lại mật khẩu của người dùng này về mặc định (123456)?');">
+                    <button type="submit" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition" title="Đặt lại mật khẩu">
+                      <i class="fa-solid fa-key"></i>
+                    </button>
+                  </form>
+                  <% if (u.username !== 'admin') { %>
+                    <form action="/users/<%= u.id %>/delete" method="POST" onsubmit="return confirm('Bạn có chắc muốn xóa tài khoản này?');">
+                      <button type="submit" class="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-medium transition" title="Xóa tài khoản">
+                        <i class="fa-solid fa-trash"></i>
+                      </button>
+                    </form>
+                  <% } %>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Tạo Tài Khoản Mới -->
+<div id="createUserModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
+  <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100">
+    <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+      <h3 class="font-bold text-slate-800 text-sm">Tạo Tài Khoản Mới</h3>
+      <button type="button" onclick="document.getElementById('createUserModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <form action="/users" method="POST" class="space-y-4">
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1">Tên đăng nhập <span class="text-red-500">*</span></label>
+        <input type="text" name="username" required placeholder="VD: thuthu02"
+          class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-hidden" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1">Mật khẩu ban đầu <span class="text-red-500">*</span></label>
+        <input type="password" name="password" required minlength="6" value="123456"
+          class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-hidden" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1">Họ và Tên đầy đủ <span class="text-red-500">*</span></label>
+        <input type="text" name="fullname" required placeholder="VD: Trần Văn Bình"
+          class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-hidden" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1">Địa chỉ Email</label>
+        <input type="email" name="email" placeholder="binh.tran@thuvien.edu.vn"
+          class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-hidden" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1">Vai trò hệ thống (Role) <span class="text-red-500">*</span></label>
+        <select name="role" id="userRoleSelect" onchange="toggleReaderLink(this)"
+          class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-hidden">
+          <option value="librarian">Thủ thư (Librarian) - Quản lý mượn trả</option>
+          <option value="admin">Quản trị viên (Admin) - Toàn quyền cấu hình</option>
+          <option value="reader">Độc giả (Reader) - Tra cứu cá nhân</option>
+        </select>
+      </div>
+
+      <div id="readerLinkBox" class="hidden">
+        <label class="block text-xs font-semibold text-slate-700 mb-1">Liên kết với thẻ độc giả</label>
+        <select name="reader_id" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-hidden">
+          <option value="">-- Chọn hồ sơ độc giả --</option>
+          <% readers.forEach(r => { %>
+            <option value="<%= r.id %>"><%= r.reader_code %> - <%= r.fullname %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div class="pt-3 flex items-center justify-end gap-2">
+        <button type="button" onclick="document.getElementById('createUserModal').classList.add('hidden')"
+          class="px-4 py-2 border border-slate-200 rounded-xl text-xs text-slate-700 hover:bg-slate-50">
+          Hủy
+        </button>
+        <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs">
+          Tạo tài khoản
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function toggleReaderLink(sel) {
+    const box = document.getElementById('readerLinkBox');
+    if (sel.value === 'reader') {
+      box.classList.remove('hidden');
+    } else {
+      box.classList.add('hidden');
+    }
+  }
+</script>
+
+<%- include('../partials/layout-end') %>

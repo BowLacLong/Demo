@@ -1,0 +1,51 @@
+        </div>
+      </main>
+      
+      <!-- Footer -->
+      <footer class="bg-white border-t border-slate-200 py-3 px-6 text-center text-xs text-slate-500 no-print flex flex-col sm:flex-row items-center justify-between gap-2">
+        <div>
+          <span class="font-semibold text-slate-700"><%= libraryName %></span> &copy; <%= new Date().getFullYear() %> &bull; Đồ án môn Thiết Kế Phần Mềm (TKPM)
+        </div>
+        <div class="flex items-center gap-4 text-[11px] text-slate-400">
+          <span>Quy định QĐ1 &rarr; QĐ6</span>
+          <span>&bull;</span>
+          <span>Kiến trúc MVC 3 lớp</span>
+          <span>&bull;</span>
+          <span>Node.js & SQLite</span>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    // Confirmation dialog helper using SweetAlert2
+    function confirmAction(message, onConfirmCallback) {
+      Swal.fire({
+        title: 'Xác nhận thao tác',
+        text: message,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#2563eb',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Đồng ý',
+        cancelButtonText: 'Hủy bỏ'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          if (typeof onConfirmCallback === 'function') {
+            onConfirmCallback();
+          }
+        }
+      });
+    }
+
+    // Mobile sidebar toggle
+    const toggleBtn = document.getElementById('mobileSidebarToggle');
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', () => {
+        const sidebar = document.querySelector('aside');
+        if (sidebar) sidebar.classList.toggle('hidden');
+      });
+    }
+  </script>
+</body>
+</html>
