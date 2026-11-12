@@ -63,7 +63,7 @@ class ReaderService {
   }
 
   createReader(readerData) {
-    // 1. Kiểm tra QĐ2 về độ tuổi
+    // 1. Kiểm tra  về độ tuổi
     const ageCheck = ruleService.validateReaderAge(readerData.date_of_birth);
     if (!ageCheck.valid) {
       throw new Error(ageCheck.message);

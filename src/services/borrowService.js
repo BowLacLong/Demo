@@ -90,7 +90,7 @@ class BorrowService {
       throw new Error('Vui lòng chọn ít nhất 1 cuốn sách để cho mượn.');
     }
 
-    // 1. Kiểm tra QĐ3 về điều kiện mượn của độc giả
+    // 1. Kiểm tra  về điều kiện mượn của độc giả
     const eligibility = ruleService.validateBorrowEligibility(readerId, copyIds.length);
     if (!eligibility.valid) {
       throw new Error(eligibility.message);
@@ -157,7 +157,7 @@ class BorrowService {
   }
 
   /**
-   * Trả sách (QĐ4)
+   * Trả sách
    * @param {number} ticketId
    * @param {Array<{ detailId: number, status: 'returned'|'lost'|'damaged', damageFee: number, damageNote: string }>} itemsToReturn
    * @param {string} returnDateStr
@@ -169,7 +169,7 @@ class BorrowService {
 
     const returnDate = returnDateStr ? returnDateStr : new Date().toISOString().split('T')[0];
     
-    // Tính tiền phạt trễ hạn theo QĐ4
+    // Tính tiền phạt trễ hạn theo quy định
     const fineCalc = ruleService.calculateFine(ticket.due_date, returnDate);
 
     const updateDetail = db.prepare(`

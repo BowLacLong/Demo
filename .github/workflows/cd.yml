@@ -1,0 +1,111 @@
+name: CD
+
+on:
+  push:
+    branches: [main, master]
+    tags: ['v*']
+  workflow_dispatch:
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Đóng gói bản phát hành
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Lấy mã nguồn
+        uses: actions/checkout@v4
+
+      - name: Cài đặt Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Cài đặt phụ thuộc
+        run: npm ci
+
+      - name: Chạy test trước khi phát hành
+        run: npm test -- --ci
+
+      - name: Đóng gói mã nguồn
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME}"
+          mkdir -p dist
+          tar -czf "dist/library-app-${version}.tar.gz" \
+            --exclude=node_modules \
+            --exclude=.git \
+            --exclude=dist \
+            --exclude=coverage \
+            --exclude=data \
+            --exclude=tests \
+            server.js src public package.json package-lock.json
+          ls -lh dist/
+
+      - name: Lưu gói phát hành
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-bundle
+          path: dist/*.tar.gz
+          retention-days: 14
+
+  release:
+    name: Tạo GitHub Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Tải gói phát hành
+        uses: actions/download-artifact@v4
+        with:
+          name: release-bundle
+          path: dist
+
+      - name: Phát hành
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.tar.gz
+          generate_release_notes: true
+
+  deploy:
+    name: Triển khai lên máy chủ
+    needs: build
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+
+    steps:
+      - name: Chưa cấu hình secrets
+        if: env.DEPLOY_HOST == '' || env.DEPLOY_PATH == ''
+        run: >-
+          echo "::notice::Chưa cấu hình DEPLOY_HOST / DEPLOY_USER / DEPLOY_SSH_KEY / DEPLOY_PATH
+          nên bỏ qua bước triển khai. Xem README.md mục CI/CD để biết cách thiết lập."
+
+      - name: Triển khai qua SSH
+        if: env.DEPLOY_HOST != '' && env.DEPLOY_PATH != ''
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
+          script_stop: true
+          script: |
+            cd "${{ secrets.DEPLOY_PATH }}"
+            git fetch --all --prune
+            git reset --hard "origin/${{ github.ref_name }}"
+            npm ci --omit=dev
+            pm2 reload "${{ secrets.PM2_APP_NAME || 'library-app' }}" \
+              || pm2 start server.js --name "${{ secrets.PM2_APP_NAME || 'library-app' }}"
+            pm2 save

@@ -41,18 +41,18 @@
 
     <a href="/books" class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition <%= currentPath.startsWith('/books') ? 'bg-blue-600 text-white font-medium shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white' %>">
       <i class="fa-solid fa-book w-5 text-center"></i>
-      <span>Quản lý Sách (QĐ1)</span>
+      <span>Quản lý Sách</span>
     </a>
 
     <% if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'librarian')) { %>
       <a href="/readers" class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition <%= currentPath.startsWith('/readers') ? 'bg-blue-600 text-white font-medium shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white' %>">
         <i class="fa-solid fa-address-card w-5 text-center"></i>
-        <span>Thẻ Độc Giả (QĐ2)</span>
+        <span>Thẻ Độc Giả</span>
       </a>
 
       <a href="/borrow" class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition <%= currentPath === '/borrow' || currentPath.startsWith('/borrow/create') || (currentPath.startsWith('/borrow/') && !currentPath.includes('overdue')) ? 'bg-blue-600 text-white font-medium shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white' %>">
         <i class="fa-solid fa-arrow-right-arrow-left w-5 text-center"></i>
-        <span>Mượn - Trả (QĐ3, QĐ4)</span>
+        <span>Mượn - Trả</span>
       </a>
 
       <a href="/borrow/overdue" class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition <%= currentPath === '/borrow/overdue' ? 'bg-amber-600 text-white font-medium shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white' %>">
@@ -62,7 +62,7 @@
 
       <a href="/fines" class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition <%= currentPath.startsWith('/fines') ? 'bg-blue-600 text-white font-medium shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white' %>">
         <i class="fa-solid fa-receipt w-5 text-center"></i>
-        <span>Thu Tiền Phạt (QĐ5)</span>
+        <span>Thu Tiền Phạt</span>
       </a>
 
       <div class="pt-3 pb-1 px-3 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
@@ -71,12 +71,12 @@
 
       <a href="/reports/categories" class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition <%= currentPath.includes('/reports/categories') ? 'bg-blue-600 text-white font-medium shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white' %>">
         <i class="fa-solid fa-chart-column w-5 text-center"></i>
-        <span>Mượn theo Thể loại (QĐ6)</span>
+        <span>Mượn theo Thể loại</span>
       </a>
 
       <a href="/reports/overdue" class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition <%= currentPath.includes('/reports/overdue') ? 'bg-blue-600 text-white font-medium shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white' %>">
         <i class="fa-solid fa-clock-rotate-left w-5 text-center"></i>
-        <span>Thống kê Sách Trễ (QĐ6)</span>
+        <span>Thống kê Sách Trễ</span>
       </a>
     <% } %>
 

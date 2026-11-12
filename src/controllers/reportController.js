@@ -10,7 +10,7 @@ class ReportController {
     const report = reportService.getMonthlyBorrowByCategory(month, year);
 
     res.render('reports/categories', {
-      title: 'Báo cáo mượn sách theo thể loại (QĐ6.1)',
+      title: 'Báo cáo mượn sách theo thể loại',
       report,
       selectedMonth: Number(month),
       selectedYear: Number(year)
@@ -24,7 +24,7 @@ class ReportController {
     const report = reportService.getOverdueReport(date);
 
     res.render('reports/overdue', {
-      title: 'Báo cáo thống kê sách trả trễ (QĐ6.2)',
+      title: 'Báo cáo thống kê sách trả trễ',
       report,
       selectedDate: date
     });

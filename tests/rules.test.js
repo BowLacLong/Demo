@@ -5,8 +5,8 @@ beforeAll(() => {
   seedDatabase();
 });
 
-describe('Kiểm thử các Quy định Nghiệp vụ (QĐ1 -> QĐ5) - Môn TKPM', () => {
-  describe('[Quy định 1 - QĐ1] Tiếp nhận sách mới', () => {
+describe('Kiểm thử các Quy định Nghiệp vụ Thư Viện', () => {
+  describe('Quy định tiếp nhận sách mới', () => {
     test('Cho phép sách xuất bản trong khoảng N năm quy định (mặc định 8 năm)', () => {
       const curYear = new Date().getFullYear();
       const check = ruleService.validateBookEntry(curYear - 3);
@@ -17,7 +17,7 @@ describe('Kiểm thử các Quy định Nghiệp vụ (QĐ1 -> QĐ5) - Môn TKPM
       const curYear = new Date().getFullYear();
       const check = ruleService.validateBookEntry(curYear - 10);
       expect(check.valid).toBe(false);
-      expect(check.message).toContain('QĐ1 vi phạm');
+      expect(check.message).toContain('Chỉ nhận sách xuất bản trong vòng');
     });
 
     test('Từ chối sách có năm xuất bản lớn hơn năm hiện tại', () => {
@@ -27,7 +27,7 @@ describe('Kiểm thử các Quy định Nghiệp vụ (QĐ1 -> QĐ5) - Môn TKPM
     });
   });
 
-  describe('[Quy định 2 - QĐ2] Lập thẻ độc giả', () => {
+  describe('Quy định lập thẻ độc giả', () => {
     test('Chấp nhận độc giả trong độ tuổi từ 18 đến 55 tuổi', () => {
       const curYear = new Date().getFullYear();
       const dob = `${curYear - 20}-01-01`;
@@ -41,7 +41,7 @@ describe('Kiểm thử các Quy định Nghiệp vụ (QĐ1 -> QĐ5) - Môn TKPM
       const dob = `${curYear - 15}-01-01`;
       const check = ruleService.validateReaderAge(dob);
       expect(check.valid).toBe(false);
-      expect(check.message).toContain('QĐ2 vi phạm');
+      expect(check.message).toContain('Tuổi độc giả phải từ');
     });
 
     test('Từ chối độc giả trên 55 tuổi', () => {
@@ -49,16 +49,16 @@ describe('Kiểm thử các Quy định Nghiệp vụ (QĐ1 -> QĐ5) - Môn TKPM
       const dob = `${curYear - 60}-01-01`;
       const check = ruleService.validateReaderAge(dob);
       expect(check.valid).toBe(false);
-      expect(check.message).toContain('QĐ2 vi phạm');
+      expect(check.message).toContain('Tuổi độc giả phải từ');
     });
 
-    test('Tính đúng thời hạn thẻ độc giả (+6 tháng theo QĐ2)', () => {
+    test('Tính đúng thời hạn thẻ độc giả (+6 tháng)', () => {
       const expiry = ruleService.calculateExpiryDate('2026-01-01');
       expect(expiry).toBe('2026-07-01');
     });
   });
 
-  describe('[Quy định 4 - QĐ4] Tính tiền phạt trả sách trễ hạn', () => {
+  describe('Quy định tính tiền phạt trả sách trễ hạn', () => {
     test('Không phạt nếu trả đúng hạn', () => {
       const res = ruleService.calculateFine('2026-05-20', '2026-05-18');
       expect(res.overdueDays).toBe(0);
@@ -72,12 +72,11 @@ describe('Kiểm thử các Quy định Nghiệp vụ (QĐ1 -> QĐ5) - Môn TKPM
     });
   });
 
-  describe('[Quy định 5 - QĐ5] Thu tiền phạt', () => {
+  describe('Quy định thu tiền phạt', () => {
     test('Từ chối thu số tiền lớn hơn tổng nợ của độc giả', () => {
-      // Reader DG0002 has total_debt = 15.000 VNĐ in seed
       const check = ruleService.validateFineCollection(2, 20000);
       expect(check.valid).toBe(false);
-      expect(check.message).toContain('QĐ5 vi phạm');
+      expect(check.message).toContain('không được vượt quá tổng nợ');
     });
 
     test('Chấp nhận thu số tiền nhỏ hơn hoặc bằng tổng nợ', () => {

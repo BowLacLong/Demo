@@ -1,7 +1,7 @@
 {
   "name": "doan-tkpm-quan-ly-thu-vien",
   "version": "1.0.0",
-  "description": "Đồ án cuối kỳ môn Thiết kế Phần mềm (TKPM) - Hệ thống Quản lý Thư viện chuẩn QĐ1-QĐ6",
+  "description": "Đồ án cuối kỳ môn Thiết kế Phần mềm (TKPM) - Hệ thống Quản lý Thư viện chuẩn quy định nghiệp vụ",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

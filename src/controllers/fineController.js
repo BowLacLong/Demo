@@ -9,7 +9,7 @@ class FineController {
     const receipts = fineService.getAllReceipts({ search, readerId: reader_id });
 
     res.render('fines/index', {
-      title: 'Quản lý Thu Tiền Phạt (QĐ5)',
+      title: 'Quản lý Thu Tiền Phạt',
       receipts,
       filters: { search, reader_id }
     });
@@ -32,7 +32,7 @@ class FineController {
     }
 
     res.render('fines/create', {
-      title: 'Lập phiếu thu tiền phạt (QĐ5)',
+      title: 'Lập phiếu thu tiền phạt',
       debtors,
       selectedReader
     });

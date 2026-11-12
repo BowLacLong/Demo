@@ -10,7 +10,7 @@ class RuleController {
     const readerTypes = readerService.getReaderTypes();
 
     res.render('rules/index', {
-      title: 'Quản lý Quy định Thư viện (QĐ1 - QĐ6)',
+      title: 'Quản lý Quy định Thư viện',
       rules,
       categories,
       readerTypes

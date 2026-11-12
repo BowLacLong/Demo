@@ -148,6 +148,56 @@ DoAnCuoiKy/
 
 ---
 
+---
+
+## ⚙️ CI/CD VỚI GITHUB ACTIONS
+
+Kho mã nguồn đã cấu hình sẵn hai pipeline trong `.github/workflows/`.
+
+### 1. `ci.yml` — Kiểm tra chất lượng (CI)
+
+Kích hoạt khi `push` / `pull_request` vào nhánh `main` hoặc `master`, hoặc chạy tay từ tab **Actions**:
+
+| Bước | Nội dung |
+|---|---|
+| Cài phụ thuộc | `npm ci` theo đúng `package-lock.json` |
+| Kiểm tra cú pháp | `node --check` toàn bộ tệp `.js` (bắt lỗi như thiếu ngoặc) |
+| Kiểm thử | `npm test` (Jest + Supertest) kèm báo cáo độ phủ |
+| Khởi động thử | Chạy thật `npm start` rồi gọi `GET /login`, yêu cầu HTTP 200 |
+| Ma trận phiên bản | Node 20 và Node 22 |
+
+Báo cáo độ phủ được lưu thành artifact `coverage-report` (7 ngày).
+
+### 2. `cd.yml` — Phát hành & triển khai (CD)
+
+Kích hoạt khi `push` vào nhánh chính, khi đẩy tag dạng `v*`, hoặc chạy tay:
+
+1. Cài phụ thuộc và **chạy lại test** — test lỗi thì dừng, không phát hành.
+2. Đóng gói `library-app-<version>.tar.gz` (không kèm `node_modules`, `data`, `tests`).
+3. Nếu là tag `v*`: tạo **GitHub Release** kèm gói phát hành và ghi chú tự động.
+4. Nếu là nhánh chính: triển khai qua SSH, `npm ci --omit=dev` và khởi động lại bằng PM2.
+
+### 3. Secrets cần thiết lập (Settings → Secrets and variables → Actions)
+
+| Secret | Bắt buộc | Mô tả |
+|---|---|---|
+| `DEPLOY_HOST` | Có | IP hoặc tên miền máy chủ |
+| `DEPLOY_USER` | Có | Tài khoản SSH |
+| `DEPLOY_SSH_KEY` | Có | Nội dung private key SSH |
+| `DEPLOY_PATH` | Có | Thư mục mã nguồn trên máy chủ |
+| `DEPLOY_PORT` | Không | Cổng SSH, mặc định `22` |
+| `PM2_APP_NAME` | Không | Tên tiến trình PM2, mặc định `library-app` |
+
+> Nếu chưa cấu hình secrets, pipeline vẫn chạy xanh và chỉ **bỏ qua** bước triển khai (có ghi chú rõ trong log), nên dùng được CI ngay sau khi đẩy mã nguồn lên GitHub.
+
+Máy chủ đích cần có sẵn `git`, Node.js 20+, npm và `pm2` (`npm i -g pm2`).
+
+### 4. Biến môi trường
+
+Sao chép `.env.example` thành `.env` (đã nằm trong `.gitignore`) và chỉnh `PORT`, `NODE_ENV`, `SESSION_SECRET`. Ở môi trường production bắt buộc đặt `SESSION_SECRET` là chuỗi ngẫu nhiên dài, không dùng giá trị mặc định.
+
+---
+
 ## 👨‍💻 BẢN QUYỀN & THÔNG TIN HỌC PHẦN
 Đồ án môn học Thiết Kế Phần Mềm (Software Engineering Project).
 Mọi thắc mắc hoặc cần hỗ trợ thêm về đồ án, vui lòng liên hệ nhóm phát triển.

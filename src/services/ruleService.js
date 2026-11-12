@@ -69,7 +69,7 @@ class RuleService {
   }
 
   /**
-   * [Quy định 1 - QĐ1] Kiểm tra năm xuất bản sách khi tiếp nhận
+   * [Quy định 1 - ] Kiểm tra năm xuất bản sách khi tiếp nhận
    * "Chỉ nhận các sách xuất bản trong vòng N năm"
    */
   validateBookEntry(publishYear) {
@@ -83,14 +83,14 @@ class RuleService {
     if (yearDiff > maxGap) {
       return { 
         valid: false, 
-        message: `QĐ1 vi phạm: Chỉ nhận sách xuất bản trong vòng ${maxGap} năm gần nhất (từ năm ${currentYear - maxGap} trở lại). Sách này năm ${publishYear} (cách ${yearDiff} năm).` 
+        message: `Quy định: Chỉ nhận sách xuất bản trong vòng ${maxGap} năm gần nhất (từ năm ${currentYear - maxGap} trở lại). Sách này năm ${publishYear} (cách ${yearDiff} năm).` 
       };
     }
     return { valid: true };
   }
 
   /**
-   * [Quy định 2 - QĐ2] Kiểm tra tuổi độc giả khi lập thẻ
+   * [Quy định 2 - ] Kiểm tra tuổi độc giả khi lập thẻ
    * "Tuổi của độc giả phải từ Tuổi_Tối_Thiểu đến Tuổi_Tối_Đa"
    */
   validateReaderAge(dateOfBirth) {
@@ -109,14 +109,14 @@ class RuleService {
       return {
         valid: false,
         age,
-        message: `QĐ2 vi phạm: Tuổi độc giả phải từ ${minAge} đến ${maxAge} tuổi. Hiện tại độc giả ${age} tuổi.`
+        message: `Quy định: Tuổi độc giả phải từ ${minAge} đến ${maxAge} tuổi. Hiện tại độc giả ${age} tuổi.`
       };
     }
     return { valid: true, age };
   }
 
   /**
-   * Tính ngày hết hạn thẻ dựa trên ngày cấp theo QĐ2 (thời hạn M tháng)
+   * Tính ngày hết hạn thẻ dựa trên ngày cấp theo quy định (thời hạn M tháng)
    */
   calculateExpiryDate(createdDateStr) {
     const validMonths = this.getRule('card_valid_months', 6);
@@ -127,7 +127,7 @@ class RuleService {
   }
 
   /**
-   * [Quy định 3 - QĐ3] Kiểm tra điều kiện mượn sách
+   * [Quy định 3 - ] Kiểm tra điều kiện mượn sách
    * - Thẻ độc giả còn hạn
    * - Không giữ sách quá hạn (nếu bật cấu hình)
    * - Tổng số sách đang mượn + sách mượn mới không vượt quá K cuốn
@@ -144,7 +144,7 @@ class RuleService {
     if (reader.expiry_date < todayStr || reader.status !== 'active') {
       return { 
         valid: false, 
-        message: `QĐ3 vi phạm: Thẻ độc giả đã hết hạn vào ngày ${reader.expiry_date} hoặc đang bị khóa. Vui lòng gia hạn thẻ trước khi mượn.` 
+        message: `Quy định: Thẻ độc giả đã hết hạn vào ngày ${reader.expiry_date} hoặc đang bị khóa. Vui lòng gia hạn thẻ trước khi mượn.` 
       };
     }
 
@@ -162,7 +162,7 @@ class RuleService {
       if (overdueCheck.count > 0) {
         return {
           valid: false,
-          message: `QĐ3 vi phạm: Độc giả hiện đang có ${overdueCheck.count} cuốn sách quá hạn chưa trả. Cần hoàn trả sách và thanh toán phạt trước khi mượn sách mới!`
+          message: `Quy định: Độc giả hiện đang có ${overdueCheck.count} cuốn sách quá hạn chưa trả. Cần hoàn trả sách và thanh toán phạt trước khi mượn sách mới!`
         };
       }
     }
@@ -181,7 +181,7 @@ class RuleService {
         valid: false,
         currentBorrowing,
         maxBooks,
-        message: `QĐ3 vi phạm: Độc giả chỉ được mượn tối đa ${maxBooks} cuốn. Hiện đang mượn ${currentBorrowing} cuốn, không thể mượn thêm ${newBooksCount} cuốn.`
+        message: `Quy định: Độc giả chỉ được mượn tối đa ${maxBooks} cuốn. Hiện đang mượn ${currentBorrowing} cuốn, không thể mượn thêm ${newBooksCount} cuốn.`
       };
     }
 
@@ -193,7 +193,7 @@ class RuleService {
   }
 
   /**
-   * [Quy định 4 - QĐ4] Tính tiền phạt khi trả sách trễ hạn
+   * [Quy định 4 - ] Tính tiền phạt khi trả sách trễ hạn
    * "Tiền phạt = Số ngày trễ * Tiền phạt mỗi ngày"
    */
   calculateFine(dueDateStr, returnDateStr = null) {
@@ -218,7 +218,7 @@ class RuleService {
   }
 
   /**
-   * [Quy định 5 - QĐ5] Kiểm tra số tiền thu tiền phạt
+   * [Quy định 5 - ] Kiểm tra số tiền thu tiền phạt
    * "Số tiền thu không được vượt quá số tiền độc giả đang nợ"
    */
   validateFineCollection(readerId, collectedAmount) {
@@ -237,7 +237,7 @@ class RuleService {
         valid: false,
         totalDebt: reader.total_debt,
         collectedAmount: amount,
-        message: `QĐ5 vi phạm: Số tiền thu (${amount.toLocaleString('vi-VN')} VNĐ) không được vượt quá tổng nợ hiện tại của độc giả (${reader.total_debt.toLocaleString('vi-VN')} VNĐ).`
+        message: `Quy định: Số tiền thu (${amount.toLocaleString('vi-VN')} VNĐ) không được vượt quá tổng nợ hiện tại của độc giả (${reader.total_debt.toLocaleString('vi-VN')} VNĐ).`
       };
     }
 

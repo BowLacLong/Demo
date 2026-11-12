@@ -14,7 +14,7 @@
           <i class="fa-solid fa-clock-rotate-left mr-1"></i> Gia hạn ngày trả
         </button>
         <a href="/borrow/<%= ticket.id %>/return" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition flex items-center gap-1.5">
-          <i class="fa-solid fa-arrow-turn-down"></i> Nhận Trả Sách (QĐ4)
+          <i class="fa-solid fa-arrow-turn-down"></i> Nhận Trả Sách
         </a>
       <% } %>
     </div>
@@ -26,7 +26,7 @@
       <i class="fa-solid fa-triangle-exclamation text-red-600 text-xl mt-0.5 animate-bounce"></i>
       <div class="text-xs text-red-900 leading-relaxed">
         <span class="font-bold text-sm">Cảnh báo: Phiếu mượn đã quá hạn trả <%= ticket.overdue_days_count %> ngày!</span>
-        <p class="mt-0.5">Hạn trả là ngày <strong><%= ticket.due_date %></strong>. Theo QĐ4, tiền phạt trễ hạn ước tính hiện tại: <strong class="text-red-700 font-bold"><%= (ticket.current_potential_fine || 0).toLocaleString('vi-VN') %> VNĐ</strong>.</p>
+        <p class="mt-0.5">Hạn trả là ngày <strong><%= ticket.due_date %></strong>. Theo , tiền phạt trễ hạn ước tính hiện tại: <strong class="text-red-700 font-bold"><%= (ticket.current_potential_fine || 0).toLocaleString('vi-VN') %> VNĐ</strong>.</p>
       </div>
     </div>
   <% } %>
@@ -98,7 +98,7 @@
             <th class="py-2.5 px-3">Vị Trí Kệ</th>
             <th class="py-2.5 px-3">Trạng Thái</th>
             <th class="py-2.5 px-3">Ngày Trả</th>
-            <th class="py-2.5 px-3">Trễ Hạn (QĐ4)</th>
+            <th class="py-2.5 px-3">Trễ Hạn</th>
             <th class="py-2.5 px-3 text-right">Tiền Phạt</th>
           </tr>
         </thead>

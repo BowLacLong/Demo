@@ -50,7 +50,7 @@ class ReportService {
   }
 
   /**
-   * [Quy định 6 - QĐ6.1] Báo cáo tình hình mượn sách theo thể loại trong tháng
+   * [Quy định 6 - .1] Báo cáo tình hình mượn sách theo thể loại trong tháng
    */
   getMonthlyBorrowByCategory(month, year) {
     const targetMonth = String(month).padStart(2, '0');
@@ -67,7 +67,7 @@ class ReportService {
 
     const categoriesStats = db.prepare(`
       SELECT c.id, c.code, c.name as category_name,
-             COUNT(bd.id) as borrow_count
+             COUNT(bt.id) as borrow_count
       FROM categories c
       LEFT JOIN books b ON b.category_id = c.id
       LEFT JOIN borrow_details bd ON bd.book_id = b.id
@@ -95,7 +95,7 @@ class ReportService {
   }
 
   /**
-   * [Quy định 6 - QĐ6.2] Báo cáo thống kê sách trả trễ
+   * [Quy định 6 - .2] Báo cáo thống kê sách trả trễ
    */
   getOverdueReport(targetDateStr = null) {
     const todayStr = targetDateStr || new Date().toISOString().split('T')[0];

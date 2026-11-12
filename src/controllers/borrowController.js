@@ -15,7 +15,7 @@ class BorrowController {
     });
 
     res.render('borrow/index', {
-      title: 'Quản lý Mượn Sách (QĐ3)',
+      title: 'Quản lý Mượn Sách',
       tickets,
       filters: { search, status, reader_id }
     });
@@ -51,7 +51,7 @@ class BorrowController {
     const defaultDueDate = new Date(Date.now() + (rules.max_borrow_days || 14) * 86400000).toISOString().split('T')[0];
 
     res.render('borrow/create', {
-      title: 'Lập phiếu mượn sách (QĐ3)',
+      title: 'Lập phiếu mượn sách',
       readers,
       selectedReader,
       eligibility,
@@ -107,7 +107,7 @@ class BorrowController {
     const fineCalc = ruleService.calculateFine(ticket.due_date, todayStr);
 
     res.render('borrow/return', {
-      title: `Nhận trả sách - Phiếu ${ticket.ticket_code} (QĐ4)`,
+      title: `Nhận trả sách - Phiếu ${ticket.ticket_code}`,
       ticket,
       todayStr,
       fineCalc
@@ -115,21 +115,23 @@ class BorrowController {
   }
 
   processReturn(req, res) {
-    const { return_date, items } = req.body;
+    const { return_date } = req.body;
     try {
-      // items will be an array of objects or an object of returned items
+      // Mỗi cuốn sách được gửi lên theo bộ khoá phẳng: item_<detailId>_selected / _status / _damage_fee / _damage_note.
+      // Không dùng items[<id>][...] vì bộ parse qs sẽ biến khoá số thành mảng và làm mất detailId.
       const itemsToReturn = [];
-      if (items) {
-        for (const [detailId, data] of Object.entries(items)) {
-          if (data.selected === 'on' || data.selected === '1' || data.selected === true) {
-            itemsToReturn.push({
-              detailId: Number(detailId),
-              status: data.status || 'returned',
-              damageFee: Number(data.damage_fee) || 0,
-              damageNote: data.damage_note || ''
-            });
-          }
-        }
+      for (const [key, value] of Object.entries(req.body)) {
+        const matched = /^item_(\d+)_selected$/.exec(key);
+        if (!matched) continue;
+        if (value !== 'on' && value !== '1' && value !== 'true' && value !== true) continue;
+
+        const detailId = Number(matched[1]);
+        itemsToReturn.push({
+          detailId,
+          status: req.body[`item_${detailId}_status`] || 'returned',
+          damageFee: Number(req.body[`item_${detailId}_damage_fee`]) || 0,
+          damageNote: req.body[`item_${detailId}_damage_note`] || ''
+        });
       }
 
       if (itemsToReturn.length === 0) {

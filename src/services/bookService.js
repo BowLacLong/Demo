@@ -70,7 +70,7 @@ class BookService {
   }
 
   createBook(bookData) {
-    // 1. Kiểm tra QĐ1 về năm xuất bản
+    // 1. Kiểm tra  về năm xuất bản
     const ruleCheck = ruleService.validateBookEntry(bookData.publish_year);
     if (!ruleCheck.valid) {
       throw new Error(ruleCheck.message);

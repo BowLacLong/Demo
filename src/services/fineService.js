@@ -43,7 +43,7 @@ class FineService {
   }
 
   createReceipt({ readerId, collectedAmount, userId = null, note = '' }) {
-    // 1. Kiểm tra QĐ5: Số tiền thu không được vượt quá số tiền độc giả đang nợ
+    // 1. Kiểm tra Số tiền thu không được vượt quá số tiền độc giả đang nợ
     const validation = ruleService.validateFineCollection(readerId, collectedAmount);
     if (!validation.valid) {
       throw new Error(validation.message);

@@ -32,7 +32,7 @@ class BookController {
     const minPublishYear = new Date().getFullYear() - maxGap;
 
     res.render('books/create', {
-      title: 'Tiếp nhận sách mới (QĐ1)',
+      title: 'Tiếp nhận sách mới',
       categories,
       authors,
       publishers,

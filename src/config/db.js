@@ -17,7 +17,7 @@ db.pragma('foreign_keys = ON');
 // Initialize schema
 function initSchema() {
   db.exec(`
-    -- 1. System Parameters (Cấu hình quy định QĐ1 - QĐ6)
+    -- 1. System Parameters (Cấu hình quy định quy định hệ thống)
     CREATE TABLE IF NOT EXISTS system_parameters (
       key TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -28,7 +28,7 @@ function initSchema() {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
-    -- 2. Book Categories (Thể loại sách - QĐ1)
+    -- 2. Book Categories (Thể loại sách - )
     CREATE TABLE IF NOT EXISTS categories (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       code TEXT UNIQUE NOT NULL,
@@ -83,7 +83,7 @@ function initSchema() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
-    -- 7. Reader Types (Loại độc giả - QĐ2)
+    -- 7. Reader Types (Loại độc giả - )
     CREATE TABLE IF NOT EXISTS reader_types (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       code TEXT UNIQUE NOT NULL,
@@ -123,7 +123,7 @@ function initSchema() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
-    -- 10. Borrow Tickets (Phiếu mượn sách - QĐ3)
+    -- 10. Borrow Tickets (Phiếu mượn sách - )
     CREATE TABLE IF NOT EXISTS borrow_tickets (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       ticket_code TEXT UNIQUE NOT NULL,
@@ -149,7 +149,7 @@ function initSchema() {
       damage_note TEXT
     );
 
-    -- 12. Fine Receipts (Phiếu thu tiền phạt - QĐ5)
+    -- 12. Fine Receipts (Phiếu thu tiền phạt - )
     CREATE TABLE IF NOT EXISTS fine_receipts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       receipt_code TEXT UNIQUE NOT NULL,

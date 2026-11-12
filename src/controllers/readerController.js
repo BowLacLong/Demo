@@ -32,7 +32,7 @@ class ReaderController {
     const minDob = new Date(today.getFullYear() - maxAge - 1, today.getMonth(), today.getDate()).toISOString().split('T')[0];
 
     res.render('readers/create', {
-      title: 'Lập thẻ độc giả mới (QĐ2)',
+      title: 'Lập thẻ độc giả mới',
       readerTypes,
       minAge,
       maxAge,

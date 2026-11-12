@@ -16,13 +16,13 @@ function seedDatabase() {
   `);
 
   const params = [
-    ['min_reader_age', 'Tuổi tối thiểu của độc giả', '18', 'number', 'tuổi', 'Độc giả phải đủ tuổi tối thiểu theo QĐ2'],
-    ['max_reader_age', 'Tuổi tối đa của độc giả', '55', 'number', 'tuổi', 'Độc giả không quá tuổi tối đa theo QĐ2'],
-    ['card_valid_months', 'Thời hạn thẻ độc giả', '6', 'number', 'tháng', 'Thẻ độc giả có giá trị trong vòng M tháng tính từ ngày cấp theo QĐ2'],
-    ['max_publish_years_gap', 'Khoảng cách năm xuất bản tối đa', '8', 'number', 'năm', 'Chỉ nhận sách xuất bản trong vòng N năm theo QĐ1'],
-    ['max_borrow_books', 'Số sách mượn tối đa', '5', 'number', 'cuốn', 'Mỗi độc giả chỉ được mượn tối đa K cuốn cùng lúc theo QĐ3'],
-    ['max_borrow_days', 'Số ngày mượn tối đa', '14', 'number', 'ngày', 'Thời gian mượn tối đa cho mỗi lần mượn theo QĐ3'],
-    ['fine_per_day', 'Tiền phạt trễ hạn mỗi ngày', '1000', 'number', 'VNĐ/ngày', 'Tiền phạt cho mỗi ngày trả trễ theo QĐ4'],
+    ['min_reader_age', 'Tuổi tối thiểu của độc giả', '18', 'number', 'tuổi', 'Độc giả phải đủ tuổi tối thiểu theo quy định'],
+    ['max_reader_age', 'Tuổi tối đa của độc giả', '55', 'number', 'tuổi', 'Độc giả không quá tuổi tối đa theo quy định'],
+    ['card_valid_months', 'Thời hạn thẻ độc giả', '6', 'number', 'tháng', 'Thẻ độc giả có giá trị trong vòng M tháng tính từ ngày cấp theo quy định'],
+    ['max_publish_years_gap', 'Khoảng cách năm xuất bản tối đa', '8', 'number', 'năm', 'Chỉ nhận sách xuất bản trong vòng N năm theo quy định'],
+    ['max_borrow_books', 'Số sách mượn tối đa', '5', 'number', 'cuốn', 'Mỗi độc giả chỉ được mượn tối đa K cuốn cùng lúc theo quy định'],
+    ['max_borrow_days', 'Số ngày mượn tối đa', '14', 'number', 'ngày', 'Thời gian mượn tối đa cho mỗi lần mượn theo quy định'],
+    ['fine_per_day', 'Tiền phạt trễ hạn mỗi ngày', '1000', 'number', 'VNĐ/ngày', 'Tiền phạt cho mỗi ngày trả trễ theo quy định'],
     ['prevent_borrow_if_overdue', 'Chặn mượn sách nếu có nợ quá hạn', '1', 'boolean', '', 'Nếu có sách quá hạn chưa trả thì không được mượn tiếp'],
     ['library_name', 'Tên Thư Viện', 'Thư Viện Trung Tâm ĐHQG', 'string', '', 'Tên hiển thị trên tiêu đề và phiếu mượn/thu'],
     ['library_address', 'Địa chỉ', 'Khu phố 6, P. Linh Trung, TP. Thủ Đức, TP. Hồ Chí Minh', 'string', '', 'Địa chỉ thư viện'],

@@ -48,7 +48,7 @@ router.post('/books/:id', isAuthenticated, authorize('admin', 'librarian'), book
 router.post('/books/:id/delete', isAuthenticated, authorize('admin'), bookController.delete);
 router.post('/books/:id/copies', isAuthenticated, authorize('admin', 'librarian'), bookController.addCopies);
 
-// --- Readers & Cards Management (QĐ2) ---
+// --- Readers & Cards Management ---
 router.get('/readers', isAuthenticated, authorize('admin', 'librarian'), readerController.index);
 router.get('/readers/export', isAuthenticated, authorize('admin', 'librarian'), readerController.exportExcel);
 router.get('/readers/create', isAuthenticated, authorize('admin', 'librarian'), readerController.showCreate);
@@ -59,7 +59,7 @@ router.post('/readers/:id', isAuthenticated, authorize('admin', 'librarian'), re
 router.post('/readers/:id/extend', isAuthenticated, authorize('admin', 'librarian'), readerController.extend);
 router.post('/readers/:id/delete', isAuthenticated, authorize('admin'), readerController.delete);
 
-// --- Borrow & Return Management (QĐ3, QĐ4) ---
+// --- Borrow & Return Management ---
 router.get('/borrow', isAuthenticated, authorize('admin', 'librarian'), borrowController.index);
 router.get('/borrow/export', isAuthenticated, authorize('admin', 'librarian'), borrowController.exportExcel);
 router.get('/borrow/overdue', isAuthenticated, authorize('admin', 'librarian'), borrowController.overdueList);
@@ -70,7 +70,7 @@ router.get('/borrow/:id/return', isAuthenticated, authorize('admin', 'librarian'
 router.post('/borrow/:id/return', isAuthenticated, authorize('admin', 'librarian'), borrowController.processReturn);
 router.post('/borrow/:id/extend', isAuthenticated, authorize('admin', 'librarian'), borrowController.extend);
 
-// --- Fine Receipts (QĐ5) ---
+// --- Fine Receipts ---
 router.get('/fines', isAuthenticated, authorize('admin', 'librarian'), fineController.index);
 router.get('/fines/export', isAuthenticated, authorize('admin', 'librarian'), fineController.exportExcel);
 router.get('/fines/create', isAuthenticated, authorize('admin', 'librarian'), fineController.showCreate);
@@ -78,13 +78,13 @@ router.post('/fines', isAuthenticated, authorize('admin', 'librarian'), fineCont
 router.get('/fines/:id', isAuthenticated, fineController.showDetail);
 router.get('/fines/:id/print', isAuthenticated, fineController.printReceipt);
 
-// --- Business Rules (QĐ1 - QĐ6) (Admin only) ---
+// --- Business Rules (Admin only) ---
 router.get('/rules', isAuthenticated, authorize('admin'), ruleController.index);
 router.post('/rules', isAuthenticated, authorize('admin'), ruleController.update);
 router.post('/rules/categories', isAuthenticated, authorize('admin'), ruleController.addCategory);
 router.post('/rules/reader-types', isAuthenticated, authorize('admin'), ruleController.addReaderType);
 
-// --- Reports (QĐ6) ---
+// --- Reports ---
 router.get('/reports/categories', isAuthenticated, authorize('admin', 'librarian'), reportController.categoryReport);
 router.get('/reports/categories/export', isAuthenticated, authorize('admin', 'librarian'), reportController.exportCategoryExcel);
 router.get('/reports/overdue', isAuthenticated, authorize('admin', 'librarian'), reportController.overdueReport);

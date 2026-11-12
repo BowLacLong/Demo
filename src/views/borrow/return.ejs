@@ -1,11 +1,11 @@
 <%- include('../partials/layout-start') %>
 
 <div class="max-w-4xl mx-auto space-y-6">
-  <!-- Guidance Card for QĐ4 -->
+  <!-- Guidance Card for  -->
   <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-start gap-3">
     <i class="fa-solid fa-circle-info text-emerald-600 text-lg mt-0.5"></i>
     <div class="text-xs text-emerald-900 leading-relaxed">
-      <span class="font-bold">Quy định 4 (QĐ4) - Nhận trả sách & Tính tiền phạt:</span>
+      <span class="font-bold">Quy định 4 - Nhận trả sách & Tính tiền phạt:</span>
       Nếu độc giả trả sách trễ hơn hạn hẹn trả (<strong class="text-emerald-700 font-bold"><%= ticket.due_date %></strong>), 
       tiền phạt sẽ được tính bằng <strong class="text-emerald-700 font-bold"><%= fineCalc.finePerDay.toLocaleString('vi-VN') %> VNĐ / ngày trễ</strong> cho mỗi cuốn.
       Tiền phạt sẽ được tự động cộng dồn vào tổng tiền nợ của độc giả.
@@ -33,7 +33,7 @@
           <span class="text-[10px] text-slate-400 mt-1 block">Có thể đổi ngày để test trường hợp trả trễ / phạt</span>
         </div>
         <div>
-          <label class="block font-semibold text-slate-700 mb-1">Số Ngày Trễ Hạn Tính Toán (QĐ4)</label>
+          <label class="block font-semibold text-slate-700 mb-1">Số Ngày Trễ Hạn Tính Toán</label>
           <div class="p-2 rounded-xl bg-white border border-slate-200 flex items-center justify-between">
             <span id="overdueDaysText" class="font-bold <%= fineCalc.overdueDays > 0 ? 'text-red-600' : 'text-green-600' %>">
               <%= fineCalc.overdueDays > 0 ? `Trễ ${fineCalc.overdueDays} ngày` : 'Trả đúng hạn (0 ngày trễ)' %>
@@ -56,7 +56,7 @@
               <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
                 <div class="flex items-center justify-between">
                   <label class="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" name="items[<%= d.id %>][selected]" checked
+                    <input type="checkbox" name="item_<%= d.id %>_selected" checked
                       class="return-checkbox w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
                     <span class="font-bold text-slate-800 text-sm"><%= d.book_title %></span>
                     <span class="font-mono text-xs text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
@@ -69,7 +69,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs pt-2 border-t border-slate-200/60">
                   <div>
                     <label class="block text-slate-600 mb-1">Tình trạng sách khi trả</label>
-                    <select name="items[<%= d.id %>][status]" onchange="handleStatusChange(this, '<%= d.id %>', <%= d.book_price || 0 %>)"
+                    <select name="item_<%= d.id %>_status" onchange="handleStatusChange(this, '<%= d.id %>', <%= d.book_price || 0 %>)"
                       class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
                       <option value="returned">Bình thường (Đã trả nguyên vẹn)</option>
                       <option value="damaged">Bị hư hỏng (Bồi thường tiền)</option>
@@ -79,13 +79,13 @@
 
                   <div>
                     <label class="block text-slate-600 mb-1">Tiền phạt hư hỏng / đền bù (VNĐ)</label>
-                    <input type="number" id="fee_<%= d.id %>" name="items[<%= d.id %>][damage_fee]" value="0" min="0" step="1000"
+                    <input type="number" id="fee_<%= d.id %>" name="item_<%= d.id %>_damage_fee" value="0" min="0" step="1000"
                       class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-red-600" />
                   </div>
 
                   <div>
                     <label class="block text-slate-600 mb-1">Ghi chú tình trạng</label>
-                    <input type="text" name="items[<%= d.id %>][damage_note]" placeholder="Rách bìa, mất trang..."
+                    <input type="text" name="item_<%= d.id %>_damage_note" placeholder="Rách bìa, mất trang..."
                       class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs" />
                   </div>
                 </div>
@@ -102,7 +102,7 @@
       <!-- Live summary box -->
       <div class="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-between text-xs">
         <div>
-          <span class="font-bold text-amber-900 block">Ước tính tiền phạt trễ hạn theo QĐ4:</span>
+          <span class="font-bold text-amber-900 block">Ước tính tiền phạt trễ hạn theo quy định:</span>
           <span class="text-slate-600">
             <span id="summaryOverdueDays"><%= fineCalc.overdueDays %></span> ngày trễ &times; <%= fineCalc.finePerDay.toLocaleString('vi-VN') %> đ/ngày
           </span>
