@@ -10,10 +10,10 @@ class AuthController {
     });
   }
 
-  login(req, res) {
+  async login(req, res) {
     const { username, password } = req.body;
     try {
-      const user = userService.authenticate(username, password);
+      const user = await userService.authenticate(username, password);
       if (!user) {
         req.flash('error', 'Tên đăng nhập hoặc mật khẩu không chính xác.');
         return res.redirect('/login');
@@ -38,15 +38,15 @@ class AuthController {
     });
   }
 
-  showProfile(req, res) {
-    const user = userService.getUserById(req.session.user.id);
+  async showProfile(req, res) {
+    const user = await userService.getUserById(req.session.user.id);
     res.render('auth/profile', {
       title: 'Hồ sơ cá nhân',
       user
     });
   }
 
-  changePassword(req, res) {
+  async changePassword(req, res) {
     const { old_password, new_password, confirm_password } = req.body;
 
     if (new_password !== confirm_password) {
@@ -55,7 +55,7 @@ class AuthController {
     }
 
     try {
-      userService.changePassword(req.session.user.id, old_password, new_password);
+      await userService.changePassword(req.session.user.id, old_password, new_password);
       req.flash('success', 'Đổi mật khẩu thành công!');
       return res.redirect('/profile');
     } catch (err) {

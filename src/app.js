@@ -5,9 +5,6 @@ const flash = require('connect-flash');
 const methodOverride = require('method-override');
 require('dotenv').config();
 
-// Ensure DB is initialized
-require('./config/db');
-
 const { attachLocals } = require('./middleware/authMiddleware');
 const webRoutes = require('./routes/webRoutes');
 const apiRoutes = require('./routes/apiRoutes');
@@ -31,7 +28,7 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'thu-vien-tkpm-secret-key-2026',
   resave: false,
   saveUninitialized: false,
-  cookie: { 
+  cookie: {
     maxAge: 1000 * 60 * 60 * 24 // 1 day
   }
 }));
@@ -60,8 +57,8 @@ app.use((err, req, res, next) => {
   console.error('Unhandled Application Error:', err);
   res.status(500).render('error', {
     title: 'Lỗi hệ thống (500)',
-    message: process.env.NODE_ENV === 'production' 
-      ? 'Đã xảy ra sự cố nội bộ. Vui lòng liên hệ quản trị viên.' 
+    message: process.env.NODE_ENV === 'production'
+      ? 'Đã xảy ra sự cố nội bộ. Vui lòng liên hệ quản trị viên.'
       : err.message,
     statusCode: 500
   });

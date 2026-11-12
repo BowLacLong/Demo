@@ -1,9 +1,10 @@
-const db = require('../config/db');
+const { getDb, nextId } = require('../config/db');
 const bcrypt = require('bcryptjs');
 
 class UserService {
-  authenticate(username, password) {
-    const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username.trim());
+  async authenticate(username, password) {
+    const db = await getDb();
+    const user = await db.collection('users').findOne({ username: String(username || '').trim() });
     if (!user) return null;
     if (!user.is_active) {
       throw new Error('Tài khoản này đã bị vô hiệu hóa.');
@@ -12,81 +13,96 @@ class UserService {
     const isMatch = bcrypt.compareSync(password, user.password);
     if (!isMatch) return null;
 
-    // Attach reader info if role is reader
+    let reader = null;
     if (user.role === 'reader' && user.reader_id) {
-      user.reader = db.prepare('SELECT * FROM readers WHERE id = ?').get(user.reader_id);
+      reader = await db.collection('readers').findOne({ id: user.reader_id });
     }
 
-    const { password: _, ...userWithoutPass } = user;
-    return userWithoutPass;
+    const { password: _ignored, ...userWithoutPass } = user;
+    return { ...userWithoutPass, reader };
   }
 
-  getAllUsers() {
-    return db.prepare(`
-      SELECT u.id, u.username, u.fullname, u.email, u.role, u.is_active, u.created_at,
-             r.reader_code, r.fullname as linked_reader_name
-      FROM users u
-      LEFT JOIN readers r ON u.reader_id = r.id
-      ORDER BY u.id ASC
-    `).all();
+  async getAllUsers() {
+    const db = await getDb();
+    const users = await db.collection('users').find({}).sort({ id: 1 }).toArray();
+    return this.attachReaders(users);
   }
 
-  getUserById(id) {
-    const user = db.prepare(`
-      SELECT u.id, u.username, u.fullname, u.email, u.role, u.reader_id, u.is_active, u.created_at,
-             r.reader_code, r.fullname as linked_reader_name
-      FROM users u
-      LEFT JOIN readers r ON u.reader_id = r.id
-      WHERE u.id = ?
-    `).get(id);
+  async getUserById(id) {
+    const db = await getDb();
+    const user = await db.collection('users').findOne({ id: Number(id) });
+    if (!user) return null;
 
-    return user;
+    const { password: _ignored, ...userWithoutPass } = user;
+    const [withReader] = await this.attachReaders([userWithoutPass]);
+    return withReader;
   }
 
-  createUser({ username, password, fullname, email, role, reader_id = null }) {
-    const existing = db.prepare('SELECT id FROM users WHERE username = ?').get(username.trim());
+  async attachReaders(users) {
+    const db = await getDb();
+    const readerIds = users.map(u => u.reader_id).filter(Boolean);
+    const readers = readerIds.length
+      ? await db.collection('readers').find({ id: { $in: readerIds } }).toArray()
+      : [];
+    const readerMap = new Map(readers.map(r => [r.id, r]));
+
+    return users.map(u => {
+      const reader = u.reader_id ? readerMap.get(u.reader_id) : null;
+      return {
+        ...u,
+        reader_code: reader ? reader.reader_code : null,
+        linked_reader_name: reader ? reader.fullname : null
+      };
+    });
+  }
+
+  async createUser({ username, password, fullname, email, role, reader_id = null }) {
+    const db = await getDb();
+    const trimmedUsername = String(username || '').trim();
+
+    const existing = await db.collection('users').findOne({ username: trimmedUsername });
     if (existing) {
-      throw new Error(`Tên đăng nhập "${username}" đã tồn tại trên hệ thống.`);
+      throw new Error(`Tên đăng nhập "${trimmedUsername}" đã tồn tại trên hệ thống.`);
     }
 
     const hashedPassword = bcrypt.hashSync(password, 10);
-    const stmt = db.prepare(`
-      INSERT INTO users (username, password, fullname, email, role, reader_id, is_active)
-      VALUES (?, ?, ?, ?, ?, ?, 1)
-    `);
+    const id = await nextId('users');
 
-    const res = stmt.run(
-      username.trim(),
-      hashedPassword,
-      fullname.trim(),
-      email ? email.trim() : null,
+    await db.collection('users').insertOne({
+      id,
+      username: trimmedUsername,
+      password: hashedPassword,
+      fullname: String(fullname || '').trim(),
+      email: email ? String(email).trim() : null,
       role,
-      reader_id || null
-    );
+      reader_id: reader_id ? Number(reader_id) : null,
+      is_active: 1,
+      created_at: new Date()
+    });
 
-    return this.getUserById(res.lastInsertRowid);
+    return this.getUserById(id);
   }
 
-  updateUser(id, { fullname, email, role, is_active }) {
-    const stmt = db.prepare(`
-      UPDATE users
-      SET fullname = ?, email = ?, role = ?, is_active = ?
-      WHERE id = ?
-    `);
-
-    stmt.run(
-      fullname.trim(),
-      email ? email.trim() : null,
-      role,
-      is_active !== undefined ? Number(is_active) : 1,
-      id
+  async updateUser(id, { fullname, email, role, is_active }) {
+    const db = await getDb();
+    await db.collection('users').updateOne(
+      { id: Number(id) },
+      {
+        $set: {
+          fullname: String(fullname || '').trim(),
+          email: email ? String(email).trim() : null,
+          role,
+          is_active: is_active !== undefined ? Number(is_active) : 1
+        }
+      }
     );
 
     return this.getUserById(id);
   }
 
-  changePassword(id, oldPassword, newPassword) {
-    const user = db.prepare('SELECT password FROM users WHERE id = ?').get(id);
+  async changePassword(id, oldPassword, newPassword) {
+    const db = await getDb();
+    const user = await db.collection('users').findOne({ id: Number(id) });
     if (!user) throw new Error('Người dùng không tồn tại.');
 
     const isMatch = bcrypt.compareSync(oldPassword, user.password);
@@ -97,25 +113,27 @@ class UserService {
     }
 
     const hashedPassword = bcrypt.hashSync(newPassword, 10);
-    db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hashedPassword, id);
+    await db.collection('users').updateOne({ id: Number(id) }, { $set: { password: hashedPassword } });
     return true;
   }
 
-  resetPassword(id, newPassword = '123456') {
+  async resetPassword(id, newPassword = '123456') {
+    const db = await getDb();
     const hashedPassword = bcrypt.hashSync(newPassword, 10);
-    db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hashedPassword, id);
+    await db.collection('users').updateOne({ id: Number(id) }, { $set: { password: hashedPassword } });
     return true;
   }
 
-  deleteUser(id) {
-    const user = this.getUserById(id);
+  async deleteUser(id) {
+    const user = await this.getUserById(id);
     if (!user) throw new Error('Người dùng không tồn tại.');
     if (user.username === 'admin') {
       throw new Error('Không thể xoá tài khoản Quản trị viên tối cao (admin)!');
     }
 
-    const res = db.prepare('DELETE FROM users WHERE id = ?').run(id);
-    return res.changes > 0;
+    const db = await getDb();
+    const result = await db.collection('users').deleteOne({ id: Number(id) });
+    return result.deletedCount > 0;
   }
 }
 

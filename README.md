@@ -1,21 +1,22 @@
 # HỆ THỐNG QUẢN LÝ THƯ VIỆN (LIBRARY MANAGEMENT SYSTEM)
 ### ĐỒ ÁN CUỐI KỲ &bull; MÔN THIẾT KẾ PHẦN MỀM (TKPM / SEP)
 
-> **Hệ thống web hoàn chỉnh tích hợp nguyên khối (Monolithic), đáp ứng chuẩn xác 100% các quy định nghiệp vụ QĐ1 &rarr; QĐ6, kiến trúc 3 lớp (3-Tier MVC), cơ sở dữ liệu SQLite tự khởi tạo & nạp sẵn dữ liệu mẫu thực tế, giao diện hiện đại với Tailwind CSS, hỗ trợ xuất Excel, in biên lai và kiểm thử tự động (Unit & Integration Tests).**
+> **Hệ thống web hoàn chỉnh tích hợp nguyên khối (Monolithic), đáp ứng chuẩn xác 100% các quy định nghiệp vụ QĐ1 &rarr; QĐ6, kiến trúc 3 lớp (3-Tier MVC), cơ sở dữ liệu MongoDB tự khởi tạo (không cần cài đặt SQLite) & nạp sẵn dữ liệu mẫu thực tế, giao diện hiện đại với Tailwind CSS, hỗ trợ xuất Excel, in biên lai và kiểm thử tự động (Unit & Integration Tests).**
 
 ---
 
 ## ⚡ HƯỚNG DẪN KHỞI CHẠY NHANH (QUICKSTART)
 
-Hệ thống được thiết kế **tự cấp nguồn (Zero Setup)**: Không cần cài đặt bất kỳ cơ sở dữ liệu bên ngoài nào (như MongoDB hay SQL Server). Chỉ cần Node.js và chạy 1 lệnh duy nhất!
+Hệ thống dùng **MongoDB** làm cơ sở dữ liệu: cần dịch vụ MongoDB đang chạy (mặc định `mongodb://127.0.0.1:27017`, đổi bằng biến `MONGODB_URI`). Cấu trúc collection, bộ đếm id và dữ liệu mẫu được tự tạo ở lần chạy đầu tiên, sau đó chỉ cần Node.js và 1 lệnh duy nhất!
 
 ### 1. Khởi chạy ứng dụng
 Mở terminal tại thư mục dự án và chạy:
 ```bash
+npm install            # cài phụ thuộc
 npm start
 ```
 Server sẽ tự động:
-- Khởi tạo cấu trúc bảng SQLite tại `data/library.db`
+- Kết nối MongoDB (mặc định mongodb://127.0.0.1:27017), tự tạo collection/index và nạp dữ liệu mẫu
 - Tự động nạp toàn bộ dữ liệu mẫu (sách, độc giả, phiếu mượn, nợ phạt, quy định)
 - Mở máy chủ tại cổng `3000`
 
@@ -108,7 +109,7 @@ Kết quả: **16 / 16 Test Cases Passed 100%**:
 ```
 DoAnCuoiKy/
 ├── data/
-│   └── library.db           # Cơ sở dữ liệu SQLite tự khởi tạo
+│   └── (thư mục dữ liệu cũ - hệ thống hiện tại dùng MongoDB)
 ├── docs/                    # Bộ hồ sơ đặc tả thiết kế chuẩn đồ án TKPM
 │   ├── 1_TONG_QUAN_DO_AN.md
 │   ├── 2_BUSINESS_RULES_QD1_QD6.md
@@ -117,7 +118,7 @@ DoAnCuoiKy/
 │   └── 5_TEST_CASES_TEST_REPORT.md
 ├── src/
 │   ├── config/
-│   │   ├── db.js            # Khởi tạo kết nối SQLite & Database Schema
+│   │   ├── db.js            # Kết nối MongoDB, bộ đếm id, index
 │   │   └── seed.js          # Dữ liệu mẫu ban đầu (sách, độc giả, phiếu mượn)
 │   ├── controllers/         # Các Controller xử lý nghiệp vụ & view
 │   ├── middleware/          # Xác thực Session & Phân quyền RBAC

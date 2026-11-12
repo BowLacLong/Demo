@@ -1,12 +1,11 @@
 const fineService = require('../services/fineService');
 const readerService = require('../services/readerService');
-const db = require('../config/db');
 const { exportToExcel } = require('../utils/excelExport');
 
 class FineController {
-  index(req, res) {
+  async index(req, res) {
     const { search, reader_id } = req.query;
-    const receipts = fineService.getAllReceipts({ search, readerId: reader_id });
+    const receipts = await fineService.getAllReceipts({ search, readerId: reader_id });
 
     res.render('fines/index', {
       title: 'Quản lý Thu Tiền Phạt',
@@ -15,20 +14,13 @@ class FineController {
     });
   }
 
-  showCreate(req, res) {
+  async showCreate(req, res) {
     const { reader_id } = req.query;
-    // Get readers who have debt > 0
-    const debtors = db.prepare(`
-      SELECT r.*, rt.name as type_name
-      FROM readers r
-      JOIN reader_types rt ON r.reader_type_id = rt.id
-      WHERE r.total_debt > 0
-      ORDER BY r.total_debt DESC
-    `).all();
+    const debtors = await fineService.getDebtors();
 
     let selectedReader = null;
     if (reader_id) {
-      selectedReader = readerService.getReaderById(reader_id);
+      selectedReader = await readerService.getReaderById(reader_id);
     }
 
     res.render('fines/create', {
@@ -38,11 +30,11 @@ class FineController {
     });
   }
 
-  create(req, res) {
+  async create(req, res) {
     const { reader_id, collected_amount, note } = req.body;
 
     try {
-      const receipt = fineService.createReceipt({
+      const receipt = await fineService.createReceipt({
         readerId: Number(reader_id),
         collectedAmount: Number(collected_amount),
         userId: req.session.user ? req.session.user.id : null,
@@ -57,8 +49,8 @@ class FineController {
     }
   }
 
-  showDetail(req, res) {
-    const receipt = fineService.getReceiptById(req.params.id);
+  async showDetail(req, res) {
+    const receipt = await fineService.getReceiptById(req.params.id);
     if (!receipt) {
       req.flash('error', 'Không tìm thấy phiếu thu.');
       return res.redirect('/fines');
@@ -70,8 +62,8 @@ class FineController {
     });
   }
 
-  printReceipt(req, res) {
-    const receipt = fineService.getReceiptById(req.params.id);
+  async printReceipt(req, res) {
+    const receipt = await fineService.getReceiptById(req.params.id);
     if (!receipt) {
       req.flash('error', 'Không tìm thấy phiếu thu.');
       return res.redirect('/fines');
@@ -83,8 +75,8 @@ class FineController {
     });
   }
 
-  exportExcel(req, res) {
-    const receipts = fineService.getAllReceipts();
+  async exportExcel(req, res) {
+    const receipts = await fineService.getAllReceipts();
     const exportData = receipts.map((r, idx) => ({
       STT: idx + 1,
       'Mã Phiếu Thu': r.receipt_code,

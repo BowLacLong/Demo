@@ -60,7 +60,7 @@
           <span class="text-[10px] text-emerald-600 font-normal">(≤ Tổng nợ theo quy định)</span>
         </label>
         <div class="relative">
-          <input type="number" id="collectedAmountInput" name="collected_amount" required min="1000" step="1000"
+          <input type="number" id="collectedAmountInput" name="collected_amount" required min="0" step="1"
             value="<%= selectedReader ? selectedReader.total_debt : '' %>"
             placeholder="Nhập số tiền nộp..."
             class="w-full pl-3.5 pr-20 py-2.5 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-hidden" />

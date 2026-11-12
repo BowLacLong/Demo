@@ -1,190 +1,167 @@
-const Database = require('better-sqlite3');
-const path = require('path');
-const fs = require('fs');
+const os = require('os');
+const { MongoClient } = require('mongodb');
 
-const dbPath = process.env.NODE_ENV === 'test' 
-  ? ':memory:' 
-  : path.join(__dirname, '../../data/library.db');
+const MONGO_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017';
+const DB_NAME = process.env.MONGODB_DB
+  || (process.env.NODE_ENV === 'test' ? 'library_test' : 'library');
 
-const dataDir = path.join(__dirname, '../../data');
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
+let client = null;
+let database = null;
+let connecting = null;
+
+const UNIQUE_INDEXES = [
+  ['books', 'id'],
+  ['book_copies', 'id'],
+  ['book_copies', 'barcode'],
+  ['readers', 'id'],
+  ['readers', 'reader_code'],
+  ['users', 'id'],
+  ['users', 'username'],
+  ['borrow_tickets', 'id'],
+  ['borrow_tickets', 'ticket_code'],
+  ['borrow_details', 'id'],
+  ['fine_receipts', 'id'],
+  ['fine_receipts', 'receipt_code'],
+  ['book_reservations', 'id'],
+  ['categories', 'id'],
+  ['categories', 'code'],
+  ['authors', 'id'],
+  ['publishers', 'id'],
+  ['reader_types', 'id'],
+  ['reader_types', 'code']
+];
+
+/**
+ * Tạo index cho các trường thường truy vấn và các trường duy nhất.
+ * Gọi mỗi lần kết nối, createIndex là thao tác idempotent.
+ */
+const SECONDARY_INDEXES = [
+  ['book_copies', 'book_id'],
+  ['book_copies', 'status'],
+  ['book_authors', 'book_id'],
+  ['book_authors', 'author_id'],
+  ['borrow_tickets', 'reader_id'],
+  ['borrow_tickets', 'due_date'],
+  ['borrow_details', 'ticket_id'],
+  ['borrow_details', 'book_copy_id'],
+  ['book_reservations', 'reader_id'],
+  ['books', 'category_id'],
+  ['readers', 'reader_type_id']
+];
+
+/**
+ * Tạo index, tự xử lý trường hợp index cùng tên nhưng khác tuỳ chọn (unique) từ phiên bản trước.
+ */
+async function ensureIndex(collection, field, options = {}) {
+  const keys = { [field]: 1 };
+  try {
+    await collection.createIndex(keys, options);
+  } catch (err) {
+    if (err && (err.code === 85 || err.code === 86)) {
+      try { await collection.dropIndex(`${field}_1`); } catch (_) { /* index không tồn tại */ }
+      await collection.createIndex(keys, options);
+      return;
+    }
+    throw err;
+  }
 }
 
-const db = new Database(dbPath);
-db.pragma('foreign_keys = ON');
+async function createIndexes(db) {
+  await Promise.all(SECONDARY_INDEXES.map(([name, field]) => ensureIndex(db.collection(name), field)));
 
-// Initialize schema
-function initSchema() {
-  db.exec(`
-    -- 1. System Parameters (Cấu hình quy định quy định hệ thống)
-    CREATE TABLE IF NOT EXISTS system_parameters (
-      key TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      value TEXT NOT NULL,
-      data_type TEXT NOT NULL DEFAULT 'number',
-      unit TEXT,
-      description TEXT,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-
-    -- 2. Book Categories (Thể loại sách - )
-    CREATE TABLE IF NOT EXISTS categories (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      code TEXT UNIQUE NOT NULL,
-      name TEXT NOT NULL,
-      description TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-
-    -- 3. Authors (Tác giả)
-    CREATE TABLE IF NOT EXISTS authors (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      bio TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-
-    -- 4. Publishers (Nhà xuất bản)
-    CREATE TABLE IF NOT EXISTS publishers (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      address TEXT,
-      phone TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-
-    -- 5. Books (Tựa sách / Đầu sách)
-    CREATE TABLE IF NOT EXISTS books (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT NOT NULL,
-      category_id INTEGER NOT NULL REFERENCES categories(id) ON DELETE RESTRICT,
-      author_id INTEGER REFERENCES authors(id) ON DELETE SET NULL,
-      publisher_id INTEGER REFERENCES publishers(id) ON DELETE SET NULL,
-      publish_year INTEGER NOT NULL,
-      price REAL NOT NULL,
-      entry_date DATE NOT NULL,
-      isbn TEXT,
-      cover_image TEXT,
-      summary TEXT,
-      total_copies INTEGER DEFAULT 0,
-      available_copies INTEGER DEFAULT 0,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-
-    -- 6. Book Copies (Bản sách / Cuốn sách cá biệt)
-    CREATE TABLE IF NOT EXISTS book_copies (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      book_id INTEGER NOT NULL REFERENCES books(id) ON DELETE CASCADE,
-      barcode TEXT UNIQUE NOT NULL,
-      status TEXT NOT NULL DEFAULT 'available' CHECK(status IN ('available', 'borrowed', 'damaged', 'lost', 'reserved')),
-      location TEXT DEFAULT 'Kệ chung',
-      note TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-
-    -- 7. Reader Types (Loại độc giả - )
-    CREATE TABLE IF NOT EXISTS reader_types (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      code TEXT UNIQUE NOT NULL,
-      name TEXT NOT NULL,
-      max_borrow_limit INTEGER DEFAULT 5,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-
-    -- 8. Readers (Độc giả / Thẻ thư viện)
-    CREATE TABLE IF NOT EXISTS readers (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      reader_code TEXT UNIQUE NOT NULL,
-      fullname TEXT NOT NULL,
-      date_of_birth DATE NOT NULL,
-      reader_type_id INTEGER NOT NULL REFERENCES reader_types(id) ON DELETE RESTRICT,
-      address TEXT NOT NULL,
-      email TEXT NOT NULL,
-      phone TEXT,
-      created_date DATE NOT NULL,
-      expiry_date DATE NOT NULL,
-      total_debt REAL DEFAULT 0,
-      status TEXT DEFAULT 'active' CHECK(status IN ('active', 'suspended', 'expired')),
-      avatar TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-
-    -- 9. Users (Tài khoản người dùng hệ thống)
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL,
-      fullname TEXT NOT NULL,
-      email TEXT,
-      role TEXT NOT NULL CHECK(role IN ('admin', 'librarian', 'reader')),
-      reader_id INTEGER REFERENCES readers(id) ON DELETE SET NULL,
-      is_active INTEGER DEFAULT 1,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-
-    -- 10. Borrow Tickets (Phiếu mượn sách - )
-    CREATE TABLE IF NOT EXISTS borrow_tickets (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      ticket_code TEXT UNIQUE NOT NULL,
-      reader_id INTEGER NOT NULL REFERENCES readers(id) ON DELETE RESTRICT,
-      borrow_date DATE NOT NULL,
-      due_date DATE NOT NULL,
-      status TEXT NOT NULL DEFAULT 'borrowing' CHECK(status IN ('borrowing', 'returned', 'overdue', 'partially_returned')),
-      created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-      note TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-
-    -- 11. Borrow Details (Chi tiết mượn từng cuốn sách)
-    CREATE TABLE IF NOT EXISTS borrow_details (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      ticket_id INTEGER NOT NULL REFERENCES borrow_tickets(id) ON DELETE CASCADE,
-      book_copy_id INTEGER NOT NULL REFERENCES book_copies(id) ON DELETE RESTRICT,
-      book_id INTEGER NOT NULL REFERENCES books(id) ON DELETE RESTRICT,
-      return_date DATE,
-      status TEXT NOT NULL DEFAULT 'borrowed' CHECK(status IN ('borrowed', 'returned', 'lost', 'damaged')),
-      fine_amount REAL DEFAULT 0,
-      overdue_days INTEGER DEFAULT 0,
-      damage_note TEXT
-    );
-
-    -- 12. Fine Receipts (Phiếu thu tiền phạt - )
-    CREATE TABLE IF NOT EXISTS fine_receipts (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      receipt_code TEXT UNIQUE NOT NULL,
-      reader_id INTEGER NOT NULL REFERENCES readers(id) ON DELETE RESTRICT,
-      total_debt REAL NOT NULL,
-      collected_amount REAL NOT NULL,
-      remaining_debt REAL NOT NULL,
-      receipt_date DATETIME DEFAULT CURRENT_TIMESTAMP,
-      created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-      note TEXT
-    );
-
-    -- 13. Book Reservations (Đặt mượn sách online)
-    CREATE TABLE IF NOT EXISTS book_reservations (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      reader_id INTEGER NOT NULL REFERENCES readers(id) ON DELETE CASCADE,
-      book_id INTEGER NOT NULL REFERENCES books(id) ON DELETE CASCADE,
-      reserve_date DATETIME DEFAULT CURRENT_TIMESTAMP,
-      status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'approved', 'fulfilled', 'cancelled', 'expired')),
-      note TEXT
-    );
-
-    -- Indexes for performance
-    CREATE INDEX IF NOT EXISTS idx_books_title ON books(title);
-    CREATE INDEX IF NOT EXISTS idx_books_category ON books(category_id);
-    CREATE INDEX IF NOT EXISTS idx_book_copies_barcode ON book_copies(barcode);
-    CREATE INDEX IF NOT EXISTS idx_book_copies_book ON book_copies(book_id);
-    CREATE INDEX IF NOT EXISTS idx_readers_code ON readers(reader_code);
-    CREATE INDEX IF NOT EXISTS idx_readers_name ON readers(fullname);
-    CREATE INDEX IF NOT EXISTS idx_borrow_tickets_reader ON borrow_tickets(reader_id);
-    CREATE INDEX IF NOT EXISTS idx_borrow_tickets_code ON borrow_tickets(ticket_code);
-    CREATE INDEX IF NOT EXISTS idx_borrow_details_ticket ON borrow_details(ticket_id);
-  `);
+  for (const [name, field] of UNIQUE_INDEXES) {
+    await ensureIndex(db.collection(name), field, { unique: true });
+  }
 }
 
-initSchema();
+async function connect() {
+  if (database) return database;
 
-module.exports = db;
+  if (!connecting) {
+    connecting = (async () => {
+      client = new MongoClient(MONGO_URI, {
+        serverSelectionTimeoutMS: 8000,
+        // Truyền adapter os trực tiếp: môi trường Jest không hỗ trợ dynamic import('os')
+        // khiến driver không gửi được metadata và MongoDB 9 từ chối handshake.
+        runtimeAdapters: { os }
+      });
+      await client.connect();
+      database = client.db(DB_NAME);
+      await createIndexes(database);
+      return database;
+    })().catch((err) => {
+      connecting = null;
+      database = null;
+      if (client) {
+        try { client.close(); } catch (_) { /* bỏ qua */ }
+        client = null;
+      }
+      throw err;
+    });
+  }
+
+  return connecting;
+}
+
+async function getDb() {
+  return connect();
+}
+
+async function collection(name) {
+  const db = await connect();
+  return db.collection(name);
+}
+
+/**
+ * Sinh id số tăng dần cho từng bảng (giữ nguyên định dạng mã nghiệp vụ như PM0001, DG0001).
+ */
+async function nextId(name) {
+  const db = await connect();
+  const doc = await db.collection('counters').findOneAndUpdate(
+    { _id: name },
+    { $inc: { seq: 1 } },
+    { upsert: true, returnDocument: 'after' }
+  );
+  return doc.seq;
+}
+
+/**
+ * Đồng bộ counter theo id lớn nhất đang có (dùng sau khi seed hoặc nhập dữ liệu).
+ */
+async function syncCounter(name, value) {
+  const db = await connect();
+  await db.collection('counters').updateOne(
+    { _id: name },
+    { $max: { seq: Number(value) || 0 } },
+    { upsert: true }
+  );
+}
+
+async function resetDatabase() {
+  const db = await connect();
+  await db.dropDatabase();
+  database = db;
+  await createIndexes(db);
+  return db;
+}
+
+async function disconnect() {
+  if (client) {
+    await client.close();
+  }
+  client = null;
+  database = null;
+  connecting = null;
+}
+
+module.exports = {
+  MONGO_URI,
+  DB_NAME,
+  connect,
+  getDb,
+  collection,
+  nextId,
+  syncCounter,
+  resetDatabase,
+  disconnect
+};

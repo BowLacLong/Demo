@@ -2,12 +2,12 @@ const reportService = require('../services/reportService');
 const { exportToExcel } = require('../utils/excelExport');
 
 class ReportController {
-  categoryReport(req, res) {
+  async categoryReport(req, res) {
     const today = new Date();
     const month = req.query.month || (today.getMonth() + 1);
     const year = req.query.year || today.getFullYear();
 
-    const report = reportService.getMonthlyBorrowByCategory(month, year);
+    const report = await reportService.getMonthlyBorrowByCategory(month, year);
 
     res.render('reports/categories', {
       title: 'Báo cáo mượn sách theo thể loại',
@@ -17,11 +17,11 @@ class ReportController {
     });
   }
 
-  overdueReport(req, res) {
+  async overdueReport(req, res) {
     const today = new Date().toISOString().split('T')[0];
     const date = req.query.date || today;
 
-    const report = reportService.getOverdueReport(date);
+    const report = await reportService.getOverdueReport(date);
 
     res.render('reports/overdue', {
       title: 'Báo cáo thống kê sách trả trễ',
@@ -30,10 +30,10 @@ class ReportController {
     });
   }
 
-  exportCategoryExcel(req, res) {
+  async exportCategoryExcel(req, res) {
     const month = req.query.month || (new Date().getMonth() + 1);
     const year = req.query.year || new Date().getFullYear();
-    const report = reportService.getMonthlyBorrowByCategory(month, year);
+    const report = await reportService.getMonthlyBorrowByCategory(month, year);
 
     const exportData = report.categories.map((c, idx) => ({
       STT: idx + 1,
@@ -46,9 +46,9 @@ class ReportController {
     exportToExcel(res, exportData, `BaoCaoTheLoai_T${month}_${year}`, `Bao_Cao_Muon_The_Loai_Thang_${month}_${year}`);
   }
 
-  exportOverdueExcel(req, res) {
+  async exportOverdueExcel(req, res) {
     const date = req.query.date || new Date().toISOString().split('T')[0];
-    const report = reportService.getOverdueReport(date);
+    const report = await reportService.getOverdueReport(date);
 
     const exportData = report.items.map((item, idx) => ({
       STT: idx + 1,

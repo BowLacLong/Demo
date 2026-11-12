@@ -3,17 +3,19 @@ const ruleService = require('../services/ruleService');
 const { exportToExcel } = require('../utils/excelExport');
 
 class BookController {
-  index(req, res) {
+  async index(req, res) {
     const { search, category_id, author_id, available_only } = req.query;
-    const books = bookService.getAllBooks({
+    const books = await bookService.getAllBooks({
       search,
       categoryId: category_id,
       authorId: author_id,
       availableOnly: available_only === 'true'
     });
 
-    const categories = bookService.getCategories();
-    const authors = bookService.getAuthors();
+    const [categories, authors] = await Promise.all([
+      bookService.getCategories(),
+      bookService.getAuthors()
+    ]);
 
     res.render('books/index', {
       title: 'Quản lý Sách & Tra cứu',
@@ -24,11 +26,13 @@ class BookController {
     });
   }
 
-  showCreate(req, res) {
-    const categories = bookService.getCategories();
-    const authors = bookService.getAuthors();
-    const publishers = bookService.getPublishers();
-    const maxGap = ruleService.getRule('max_publish_years_gap', 8);
+  async showCreate(req, res) {
+    const [categories, authors, publishers] = await Promise.all([
+      bookService.getCategories(),
+      bookService.getAuthors(),
+      bookService.getPublishers()
+    ]);
+    const maxGap = await ruleService.getRule('max_publish_years_gap', 8);
     const minPublishYear = new Date().getFullYear() - maxGap;
 
     res.render('books/create', {
@@ -42,9 +46,9 @@ class BookController {
     });
   }
 
-  create(req, res) {
+  async create(req, res) {
     try {
-      const newBook = bookService.createBook(req.body);
+      const newBook = await bookService.createBook(req.body);
       req.flash('success', `Đã tiếp nhận sách "${newBook.title}" thành công với ${newBook.total_copies} bản sách!`);
       res.redirect(`/books/${newBook.id}`);
     } catch (err) {
@@ -53,8 +57,8 @@ class BookController {
     }
   }
 
-  showDetail(req, res) {
-    const book = bookService.getBookById(req.params.id);
+  async showDetail(req, res) {
+    const book = await bookService.getBookById(req.params.id);
     if (!book) {
       req.flash('error', 'Không tìm thấy sách yêu cầu.');
       return res.redirect('/books');
@@ -66,17 +70,19 @@ class BookController {
     });
   }
 
-  showEdit(req, res) {
-    const book = bookService.getBookById(req.params.id);
+  async showEdit(req, res) {
+    const book = await bookService.getBookById(req.params.id);
     if (!book) {
       req.flash('error', 'Không tìm thấy sách yêu cầu.');
       return res.redirect('/books');
     }
 
-    const categories = bookService.getCategories();
-    const authors = bookService.getAuthors();
-    const publishers = bookService.getPublishers();
-    const maxGap = ruleService.getRule('max_publish_years_gap', 8);
+    const [categories, authors, publishers] = await Promise.all([
+      bookService.getCategories(),
+      bookService.getAuthors(),
+      bookService.getPublishers()
+    ]);
+    const maxGap = await ruleService.getRule('max_publish_years_gap', 8);
 
     res.render('books/edit', {
       title: `Chỉnh sửa: ${book.title}`,
@@ -89,9 +95,9 @@ class BookController {
     });
   }
 
-  update(req, res) {
+  async update(req, res) {
     try {
-      bookService.updateBook(req.params.id, req.body);
+      await bookService.updateBook(req.params.id, req.body);
       req.flash('success', 'Cập nhật thông tin sách thành công!');
       res.redirect(`/books/${req.params.id}`);
     } catch (err) {
@@ -100,9 +106,9 @@ class BookController {
     }
   }
 
-  delete(req, res) {
+  async delete(req, res) {
     try {
-      bookService.deleteBook(req.params.id);
+      await bookService.deleteBook(req.params.id);
       req.flash('success', 'Đã xoá sách thành công.');
       res.redirect('/books');
     } catch (err) {
@@ -111,10 +117,10 @@ class BookController {
     }
   }
 
-  addCopies(req, res) {
+  async addCopies(req, res) {
     const { count, location, note } = req.body;
     try {
-      bookService.addCopies(req.params.id, Number(count) || 1, location, note);
+      await bookService.addCopies(req.params.id, Number(count) || 1, location, note);
       req.flash('success', `Đã bổ sung ${count} bản sách mới!`);
       res.redirect(`/books/${req.params.id}`);
     } catch (err) {
@@ -123,8 +129,8 @@ class BookController {
     }
   }
 
-  exportExcel(req, res) {
-    const books = bookService.getAllBooks();
+  async exportExcel(req, res) {
+    const books = await bookService.getAllBooks();
     const exportData = books.map((b, idx) => ({
       STT: idx + 1,
       'Mã Sách': `B${String(b.id).padStart(4, '0')}`,

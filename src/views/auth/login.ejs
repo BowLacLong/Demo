@@ -17,7 +17,6 @@
         <i class="fa-solid fa-book-bookmark text-3xl"></i>
       </div>
       <h1 class="text-2xl font-black text-white tracking-tight"><%= libraryName %></h1>
-      <p class="text-xs text-slate-400 mt-1">Đồ Án Thiết Kế Phần Mềm &bull; Hệ Thống Quản Lý Thư Viện</p>
     </div>
 
     <!-- Login Card -->
@@ -62,8 +61,13 @@
               <i class="fa-solid fa-lock"></i>
             </span>
             <input type="password" id="passwordInput" name="password" required
-              class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              class="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
               placeholder="••••••••" />
+            <button type="button" id="togglePassword"
+              class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 hover:text-slate-700 transition-colors"
+              title="Ẩn/Hiện mật khẩu">
+              <i class="fa-solid fa-eye" id="toggleIcon"></i>
+            </button>
           </div>
         </div>
 
@@ -105,6 +109,18 @@
       document.getElementById('usernameInput').value = u;
       document.getElementById('passwordInput').value = p;
     }
+
+    document.getElementById('togglePassword').addEventListener('click', function () {
+      const input = document.getElementById('passwordInput');
+      const icon = document.getElementById('toggleIcon');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('fa-eye', 'fa-eye-slash');
+      } else {
+        input.type = 'password';
+        icon.classList.replace('fa-eye-slash', 'fa-eye');
+      }
+    });
   </script>
 </body>
 </html>

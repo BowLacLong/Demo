@@ -1,84 +1,125 @@
-const db = require('../config/db');
+const { getDb, nextId } = require('../config/db');
 
 class ReservationService {
-  getAllReservations({ status = '', readerId = '' } = {}) {
-    let sql = `
-      SELECT br.*, 
-             b.title as book_title, b.cover_image, b.available_copies, b.total_copies,
-             c.name as category_name,
-             r.fullname as reader_name, r.reader_code, r.phone as reader_phone, r.email as reader_email
-      FROM book_reservations br
-      JOIN books b ON br.book_id = b.id
-      JOIN categories c ON b.category_id = c.id
-      JOIN readers r ON br.reader_id = r.id
-      WHERE 1=1
-    `;
-    const params = [];
+  async getAllReservations({ status = '', readerId = '' } = {}) {
+    const db = await getDb();
+    const filter = {};
 
-    if (status) {
-      sql += ' AND br.status = ?';
-      params.push(status);
-    }
+    if (status) filter.status = status;
+    if (readerId) filter.reader_id = Number(readerId);
 
-    if (readerId) {
-      sql += ' AND br.reader_id = ?';
-      params.push(readerId);
-    }
+    const reservations = await db.collection('book_reservations').find(filter).sort({ id: -1 }).toArray();
+    if (reservations.length === 0) return [];
 
-    sql += ' ORDER BY br.id DESC';
-    return db.prepare(sql).all(...params);
+    const bookIds = [...new Set(reservations.map(r => r.book_id))];
+    const readerIds = [...new Set(reservations.map(r => r.reader_id))];
+
+    const [books, readers, categories] = await Promise.all([
+      bookIds.length ? db.collection('books').find({ id: { $in: bookIds } }).toArray() : [],
+      readerIds.length ? db.collection('readers').find({ id: { $in: readerIds } }).toArray() : [],
+      db.collection('categories').find({}).toArray()
+    ]);
+
+    const bookMap = new Map(books.map(b => [b.id, b]));
+    const readerMap = new Map(readers.map(r => [r.id, r]));
+    const categoryMap = new Map(categories.map(c => [c.id, c]));
+
+    return reservations.map(r => {
+      const book = bookMap.get(r.book_id);
+      const reader = readerMap.get(r.reader_id);
+      const category = book ? categoryMap.get(book.category_id) : null;
+
+      return {
+        ...r,
+        book_title: book ? book.title : null,
+        cover_image: book ? book.cover_image : null,
+        available_copies: book ? (book.available_copies || 0) : 0,
+        total_copies: book ? (book.total_copies || 0) : 0,
+        category_name: category ? category.name : null,
+        reader_name: reader ? reader.fullname : null,
+        reader_code: reader ? reader.reader_code : null,
+        reader_phone: reader ? reader.phone : null,
+        reader_email: reader ? reader.email : null
+      };
+    });
   }
 
-  getReservationById(id) {
-    return db.prepare(`
-      SELECT br.*, 
-             b.title as book_title, b.cover_image,
-             r.fullname as reader_name, r.reader_code, r.phone as reader_phone
-      FROM book_reservations br
-      JOIN books b ON br.book_id = b.id
-      JOIN readers r ON br.reader_id = r.id
-      WHERE br.id = ?
-    `).get(id);
+  async getReservationById(id) {
+    const db = await getDb();
+    const reservation = await db.collection('book_reservations').findOne({ id: Number(id) });
+    if (!reservation) return null;
+
+    const book = await db.collection('books').findOne({ id: reservation.book_id });
+    const reader = await db.collection('readers').findOne({ id: reservation.reader_id });
+
+    return {
+      ...reservation,
+      book_title: book ? book.title : null,
+      cover_image: book ? book.cover_image : null,
+      available_copies: book ? (book.available_copies || 0) : 0,
+      total_copies: book ? (book.total_copies || 0) : 0,
+      reader_name: reader ? reader.fullname : null,
+      reader_code: reader ? reader.reader_code : null,
+      reader_phone: reader ? reader.phone : null
+    };
   }
 
-  createReservation(readerId, bookId, note = '') {
-    const reader = db.prepare('SELECT * FROM readers WHERE id = ?').get(readerId);
+  async createReservation(readerId, bookId, note = '') {
+    const db = await getDb();
+    const reader = await db.collection('readers').findOne({ id: Number(readerId) });
     if (!reader) throw new Error('Không tìm thấy thông tin độc giả.');
 
     const todayStr = new Date().toISOString().split('T')[0];
-    if (reader.expiry_date < todayStr || reader.status !== 'active') {
+    if (!reader.expiry_date || reader.expiry_date < todayStr || reader.status !== 'active') {
       throw new Error('Thẻ độc giả của bạn đã hết hạn hoặc bị tạm ngưng, không thể đặt sách online.');
     }
 
-    // Check if reader already has pending reservation for this book
-    const existing = db.prepare(`
-      SELECT id FROM book_reservations 
-      WHERE reader_id = ? AND book_id = ? AND status IN ('pending', 'approved')
-    `).get(readerId, bookId);
+    const book = await db.collection('books').findOne({ id: Number(bookId) });
+    if (!book) throw new Error('Không tìm thấy sách cần đặt mượn.');
+
+    // Mỗi độc giả chỉ có 1 yêu cầu đang chờ cho mỗi cuốn sách
+    const existing = await db.collection('book_reservations').findOne({
+      reader_id: Number(readerId),
+      book_id: Number(bookId),
+      status: { $in: ['pending', 'approved'] }
+    });
 
     if (existing) {
       throw new Error('Bạn đã có một yêu cầu đặt trước cho cuốn sách này đang chờ xử lý.');
     }
 
-    const stmt = db.prepare(`
-      INSERT INTO book_reservations (reader_id, book_id, status, note)
-      VALUES (?, ?, 'pending', ?)
-    `);
+    const id = await nextId('book_reservations');
+    await db.collection('book_reservations').insertOne({
+      id,
+      reader_id: Number(readerId),
+      book_id: Number(bookId),
+      reserve_date: new Date().toISOString(),
+      status: 'pending',
+      note: note || ''
+    });
 
-    const res = stmt.run(readerId, bookId, note);
-    return this.getReservationById(res.lastInsertRowid);
+    return this.getReservationById(id);
   }
 
-  updateStatus(id, newStatus) {
-    const allowed = ['pending', 'approved', 'fulfilled', 'cancelled'];
+  async updateStatus(id, newStatus) {
+    const allowed = ['pending', 'approved', 'fulfilled', 'cancelled', 'expired'];
     if (!allowed.includes(newStatus)) {
       throw new Error('Trạng thái không hợp lệ.');
     }
 
-    const stmt = db.prepare('UPDATE book_reservations SET status = ? WHERE id = ?');
-    stmt.run(newStatus, id);
+    const db = await getDb();
+    const reservation = await db.collection('book_reservations').findOne({ id: Number(id) });
+    if (!reservation) {
+      throw new Error('Không tìm thấy yêu cầu đặt mượn này.');
+    }
+
+    await db.collection('book_reservations').updateOne(
+      { id: Number(id) },
+      { $set: { status: newStatus } }
+    );
+
     return this.getReservationById(id);
   }
 }
 
-module.exports = new ReservationService;
+module.exports = new ReservationService();

@@ -1,9 +1,15 @@
 const request = require('supertest');
 const app = require('../src/app');
+const { resetDatabase, disconnect } = require('../src/config/db');
 const seedDatabase = require('../src/config/seed');
 
-beforeAll(() => {
-  seedDatabase();
+beforeAll(async () => {
+  await resetDatabase();
+  await seedDatabase();
+}, 60000);
+
+afterAll(async () => {
+  await disconnect();
 });
 
 describe('Kiểm thử RESTful API Thư Viện', () => {

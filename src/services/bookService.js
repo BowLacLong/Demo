@@ -1,230 +1,428 @@
-const db = require('../config/db');
+const { getDb, nextId } = require('../config/db');
 const ruleService = require('./ruleService');
+const { escapeRegex } = require('../utils/search');
 
 class BookService {
-  getAllBooks({ search = '', categoryId = '', authorId = '', availableOnly = false, limit = 100, offset = 0 } = {}) {
-    let sql = `
-      SELECT b.*, 
-             c.name as category_name, c.code as category_code,
-             a.name as author_name, 
-             p.name as publisher_name,
-             (SELECT COUNT(*) FROM book_copies bc WHERE bc.book_id = b.id) as total_copies,
-             (SELECT COUNT(*) FROM book_copies bc WHERE bc.book_id = b.id AND bc.status = 'available') as available_copies
-      FROM books b
-      LEFT JOIN categories c ON b.category_id = c.id
-      LEFT JOIN authors a ON b.author_id = a.id
-      LEFT JOIN publishers p ON b.publisher_id = p.id
-      WHERE 1=1
-    `;
-    const params = [];
+  async getAllBooks({ search = '', categoryId = '', authorId = '', availableOnly = false, limit = 100, offset = 0 } = {}) {
+    const db = await getDb();
+    const filter = {};
 
-    if (search && search.trim() !== '') {
-      sql += ` AND (b.title LIKE ? OR b.isbn LIKE ? OR a.name LIKE ?)`;
-      const term = `%${search.trim()}%`;
-      params.push(term, term, term);
+    if (search && String(search).trim() !== '') {
+      const term = String(search).trim();
+      const regex = { $regex: escapeRegex(term), $options: 'i' };
+
+      const authors = await db.collection('authors').find({ name: regex }).project({ id: 1 }).toArray();
+      const authorIds = authors.map(a => a.id);
+      const links = authorIds.length
+        ? await db.collection('book_authors').find({ author_id: { $in: authorIds } }).project({ book_id: 1 }).toArray()
+        : [];
+      const bookIds = [...new Set(links.map(l => l.book_id))];
+
+      filter.$or = [
+        { title: regex },
+        { isbn: regex },
+        ...(bookIds.length ? [{ id: { $in: bookIds } }] : [])
+      ];
     }
 
-    if (categoryId) {
-      sql += ` AND b.category_id = ?`;
-      params.push(categoryId);
-    }
+    if (categoryId) filter.category_id = Number(categoryId);
+    if (authorId) filter.author_id = Number(authorId);
 
-    if (authorId) {
-      sql += ` AND b.author_id = ?`;
-      params.push(authorId);
-    }
+    let books = await db.collection('books')
+      .find(filter)
+      .sort({ id: -1 })
+      .skip(Number(offset) || 0)
+      .limit(Number(limit) || 100)
+      .toArray();
+
+    books = await this.attachRelations(books);
 
     if (availableOnly) {
-      sql += ` AND (SELECT COUNT(*) FROM book_copies bc WHERE bc.book_id = b.id AND bc.status = 'available') > 0`;
+      books = books.filter(b => b.available_copies > 0);
     }
 
-    sql += ` ORDER BY b.id DESC LIMIT ? OFFSET ?`;
-    params.push(limit, offset);
-
-    return db.prepare(sql).all(...params);
+    return books;
   }
 
-  getBookById(id) {
-    const book = db.prepare(`
-      SELECT b.*, 
-             c.name as category_name, c.code as category_code,
-             a.name as author_name, a.bio as author_bio,
-             p.name as publisher_name, p.address as publisher_address
-      FROM books b
-      LEFT JOIN categories c ON b.category_id = c.id
-      LEFT JOIN authors a ON b.author_id = a.id
-      LEFT JOIN publishers p ON b.publisher_id = p.id
-      WHERE b.id = ?
-    `).get(id);
+  /**
+   * Gắn thể loại, tác giả, nhà xuất bản và số bản sách cho danh sách đầu sách.
+   */
+  async attachRelations(books) {
+    if (books.length === 0) return [];
 
+    const db = await getDb();
+    const bookIds = books.map(b => b.id);
+    const categoryIds = [...new Set(books.map(b => b.category_id).filter(Boolean))];
+    const publisherIds = [...new Set(books.map(b => b.publisher_id).filter(Boolean))];
+
+    const [categories, publishers, authors, links, copyStats] = await Promise.all([
+      categoryIds.length ? db.collection('categories').find({ id: { $in: categoryIds } }).toArray() : [],
+      publisherIds.length ? db.collection('publishers').find({ id: { $in: publisherIds } }).toArray() : [],
+      db.collection('authors').find({}).toArray(),
+      db.collection('book_authors').find({ book_id: { $in: bookIds } }).toArray(),
+      db.collection('book_copies').aggregate([
+        { $match: { book_id: { $in: bookIds } } },
+        { $group: { _id: { book_id: '$book_id', status: '$status' }, count: { $sum: 1 } } }
+      ]).toArray()
+    ]);
+
+    const categoryMap = new Map(categories.map(c => [c.id, c]));
+    const publisherMap = new Map(publishers.map(p => [p.id, p]));
+    const authorMap = new Map(authors.map(a => [a.id, a]));
+
+    const authorsByBook = new Map();
+    for (const link of links.sort((a, b) => a.author_id - b.author_id)) {
+      const author = authorMap.get(link.author_id);
+      if (!author) continue;
+      if (!authorsByBook.has(link.book_id)) authorsByBook.set(link.book_id, []);
+      authorsByBook.get(link.book_id).push(author.name);
+    }
+
+    const statsByBook = new Map();
+    for (const row of copyStats) {
+      const bookId = row._id.book_id;
+      if (!statsByBook.has(bookId)) statsByBook.set(bookId, { total: 0, available: 0 });
+      const stat = statsByBook.get(bookId);
+      stat.total += row.count;
+      if (row._id.status === 'available') stat.available += row.count;
+    }
+
+    return books.map(book => {
+      const category = categoryMap.get(book.category_id);
+      const publisher = publisherMap.get(book.publisher_id);
+      const names = authorsByBook.get(book.id);
+      const fallbackAuthor = authorMap.get(book.author_id);
+      const stat = statsByBook.get(book.id) || { total: 0, available: 0 };
+
+      return {
+        ...book,
+        category_name: category ? category.name : null,
+        category_code: category ? category.code : null,
+        author_name: names && names.length ? names.join(', ') : (fallbackAuthor ? fallbackAuthor.name : null),
+        publisher_name: publisher ? publisher.name : null,
+        publisher_address: publisher ? publisher.address : null,
+        total_copies: stat.total,
+        available_copies: stat.available
+      };
+    });
+  }
+
+  async getBookById(id) {
+    const db = await getDb();
+    const book = await db.collection('books').findOne({ id: Number(id) });
     if (!book) return null;
 
-    book.copies = db.prepare(`
-      SELECT * FROM book_copies WHERE book_id = ? ORDER BY id ASC
-    `).all(id);
+    const [withRelations] = await this.attachRelations([book]);
+    const copies = await db.collection('book_copies').find({ book_id: book.id }).sort({ id: 1 }).toArray();
 
-    book.total_copies = book.copies.length;
-    book.available_copies = book.copies.filter(c => c.status === 'available').length;
+    const primaryAuthor = book.author_id
+      ? await db.collection('authors').findOne({ id: book.author_id })
+      : null;
 
-    return book;
+    return {
+      ...withRelations,
+      author_bio: primaryAuthor ? primaryAuthor.bio : null,
+      copies,
+      total_copies: copies.length,
+      available_copies: copies.filter(c => c.status === 'available').length
+    };
   }
 
-  createBook(bookData) {
-    // 1. Kiểm tra  về năm xuất bản
-    const ruleCheck = ruleService.validateBookEntry(bookData.publish_year);
+  // Tách chuỗi "Tác giả A, Tác giả B" thành danh sách id tác giả (tự tạo tác giả mới nếu chưa có)
+  async resolveAuthorIds(authorNames, fallbackAuthorId = null) {
+    const raw = Array.isArray(authorNames) ? authorNames.join(',') : (authorNames || '');
+    const names = String(raw)
+      .split(/[,;]/)
+      .map(n => n.trim())
+      .filter(Boolean);
+
+    const seen = new Set();
+    const uniqueNames = [];
+    for (const name of names) {
+      const key = name.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      uniqueNames.push(name);
+    }
+
+    if (uniqueNames.length === 0) {
+      return fallbackAuthorId ? [Number(fallbackAuthorId)] : [];
+    }
+
+    const db = await getDb();
+    const ids = [];
+
+    for (const name of uniqueNames) {
+      const existing = await db.collection('authors').findOne({
+        name: { $regex: `^${escapeRegex(name)}$`, $options: 'i' }
+      });
+
+      if (existing) {
+        ids.push(existing.id);
+      } else {
+        const id = await nextId('authors');
+        await db.collection('authors').insertOne({ id, name, bio: null, created_at: new Date() });
+        ids.push(id);
+      }
+    }
+
+    return ids;
+  }
+
+  async createBook(bookData) {
+    // 1. Kiểm tra về năm xuất bản
+    const ruleCheck = await ruleService.validateBookEntry(bookData.publish_year);
     if (!ruleCheck.valid) {
       throw new Error(ruleCheck.message);
     }
 
     const {
-      title, category_id, author_id, publisher_id,
+      title, category_id, author_id, author_names, publisher_id,
       publish_year, price, entry_date, isbn, cover_image, summary,
       initial_copies = 1, location = 'Kệ chung'
     } = bookData;
 
+    const db = await getDb();
     const todayStr = new Date().toISOString().split('T')[0];
+    const copiesCount = Math.max(1, Number(initial_copies) || 1);
+    const authorIds = await this.resolveAuthorIds(author_names, author_id);
 
-    const insertBook = db.prepare(`
-      INSERT INTO books (title, category_id, author_id, publisher_id, publish_year, price, entry_date, isbn, cover_image, summary, total_copies, available_copies)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
+    const bookId = await nextId('books');
 
-    const insertCopy = db.prepare(`
-      INSERT INTO book_copies (book_id, barcode, status, location, note)
-      VALUES (?, ?, 'available', ?, ?)
-    `);
-
-    let newBookId;
-    const tx = db.transaction(() => {
-      const copiesCount = Math.max(1, Number(initial_copies) || 1);
-      const res = insertBook.run(
-        title.trim(),
-        category_id,
-        author_id || null,
-        publisher_id || null,
-        Number(publish_year),
-        Number(price) || 0,
-        entry_date || todayStr,
-        isbn || null,
-        cover_image || null,
-        summary || null,
-        copiesCount,
-        copiesCount
-      );
-      newBookId = res.lastInsertRowid;
-
-      for (let i = 1; i <= copiesCount; i++) {
-        const barcode = `BK${String(newBookId).padStart(4, '0')}-${String(i).padStart(2, '0')}`;
-        insertCopy.run(newBookId, barcode, location, 'Bản sách tiếp nhận ban đầu');
-      }
+    await db.collection('books').insertOne({
+      id: bookId,
+      title: String(title || '').trim(),
+      category_id: Number(category_id),
+      author_id: authorIds[0] || null,
+      publisher_id: publisher_id ? Number(publisher_id) : null,
+      publish_year: Number(publish_year),
+      price: Number(price) || 0,
+      entry_date: entry_date || todayStr,
+      isbn: isbn || null,
+      cover_image: cover_image || null,
+      summary: summary || null,
+      total_copies: copiesCount,
+      available_copies: copiesCount,
+      created_at: new Date()
     });
 
-    tx();
-    return this.getBookById(newBookId);
+    if (authorIds.length) {
+      await db.collection('book_authors').insertMany(
+        authorIds.map(authorId => ({ book_id: bookId, author_id: authorId }))
+      );
+    }
+
+    const copies = [];
+    for (let i = 1; i <= copiesCount; i++) {
+      copies.push({
+        id: await nextId('book_copies'),
+        book_id: bookId,
+        barcode: `BK${String(bookId).padStart(4, '0')}-${String(i).padStart(2, '0')}`,
+        status: 'available',
+        location: location || 'Kệ chung',
+        note: 'Bản sách tiếp nhận ban đầu',
+        created_at: new Date()
+      });
+    }
+    await db.collection('book_copies').insertMany(copies);
+
+    return this.getBookById(bookId);
   }
 
-  updateBook(id, bookData) {
+  async updateBook(id, bookData) {
     if (bookData.publish_year) {
-      const ruleCheck = ruleService.validateBookEntry(bookData.publish_year);
+      const ruleCheck = await ruleService.validateBookEntry(bookData.publish_year);
       if (!ruleCheck.valid) {
         throw new Error(ruleCheck.message);
       }
     }
 
-    const stmt = db.prepare(`
-      UPDATE books
-      SET title = ?, category_id = ?, author_id = ?, publisher_id = ?,
-          publish_year = ?, price = ?, isbn = ?, cover_image = ?, summary = ?
-      WHERE id = ?
-    `);
+    const db = await getDb();
+    const bookId = Number(id);
+    const authorIds = await this.resolveAuthorIds(bookData.author_names, bookData.author_id);
 
-    stmt.run(
-      bookData.title.trim(),
-      bookData.category_id,
-      bookData.author_id || null,
-      bookData.publisher_id || null,
-      Number(bookData.publish_year),
-      Number(bookData.price) || 0,
-      bookData.isbn || null,
-      bookData.cover_image || null,
-      bookData.summary || null,
-      id
+    await db.collection('books').updateOne(
+      { id: bookId },
+      {
+        $set: {
+          title: String(bookData.title || '').trim(),
+          category_id: Number(bookData.category_id),
+          author_id: authorIds[0] || null,
+          publisher_id: bookData.publisher_id ? Number(bookData.publisher_id) : null,
+          publish_year: Number(bookData.publish_year),
+          price: Number(bookData.price) || 0,
+          isbn: bookData.isbn || null,
+          cover_image: bookData.cover_image || null,
+          summary: bookData.summary || null
+        }
+      }
     );
 
-    return this.getBookById(id);
+    await db.collection('book_authors').deleteMany({ book_id: bookId });
+    if (authorIds.length) {
+      await db.collection('book_authors').insertMany(
+        authorIds.map(authorId => ({ book_id: bookId, author_id: authorId }))
+      );
+    }
+
+    return this.getBookById(bookId);
   }
 
-  deleteBook(id) {
-    // Không cho xoá nếu có bản sách đang mượn
-    const activeBorrows = db.prepare(`
-      SELECT COUNT(*) as count 
-      FROM borrow_details bd
-      JOIN book_copies bc ON bd.book_copy_id = bc.id
-      WHERE bc.book_id = ? AND bd.status = 'borrowed'
-    `).get(id).count;
+  async deleteBook(id) {
+    const db = await getDb();
+    const bookId = Number(id);
+
+    const copies = await db.collection('book_copies').find({ book_id: bookId }).project({ id: 1 }).toArray();
+    const copyIds = copies.map(c => c.id);
+
+    const activeBorrows = copyIds.length
+      ? await db.collection('borrow_details')
+        .countDocuments({ book_copy_id: { $in: copyIds }, status: 'borrowed' })
+      : 0;
 
     if (activeBorrows > 0) {
       throw new Error(`Không thể xoá đầu sách này vì đang có ${activeBorrows} cuốn đang được mượn!`);
     }
 
-    // Xoá bản sách rồi xoá đầu sách
-    db.prepare('DELETE FROM book_copies WHERE book_id = ?').run(id);
-    const res = db.prepare('DELETE FROM books WHERE id = ?').run(id);
-    return res.changes > 0;
+    await db.collection('book_copies').deleteMany({ book_id: bookId });
+    await db.collection('book_authors').deleteMany({ book_id: bookId });
+    const result = await db.collection('books').deleteOne({ id: bookId });
+    return result.deletedCount > 0;
   }
 
-  addCopies(bookId, count = 1, location = 'Kệ chung', note = '') {
-    const book = db.prepare('SELECT id FROM books WHERE id = ?').get(bookId);
+  async addCopies(bookId, count = 1, location = 'Kệ chung', note = '') {
+    const db = await getDb();
+    const id = Number(bookId);
+    const book = await db.collection('books').findOne({ id });
     if (!book) throw new Error('Không tìm thấy sách.');
 
-    const currentCopiesCount = db.prepare('SELECT COUNT(*) as count FROM book_copies WHERE book_id = ?').get(bookId).count;
-    const insertCopy = db.prepare('INSERT INTO book_copies (book_id, barcode, status, location, note) VALUES (?, ?, ?, ?, ?)');
+    const currentCopiesCount = await db.collection('book_copies').countDocuments({ book_id: id });
+    const copies = [];
 
-    const tx = db.transaction(() => {
-      for (let i = 1; i <= count; i++) {
-        const nextIndex = currentCopiesCount + i;
-        const barcode = `BK${String(bookId).padStart(4, '0')}-${String(nextIndex).padStart(2, '0')}`;
-        insertCopy.run(bookId, barcode, 'available', location, note || 'Bổ sung thêm');
-      }
+    for (let i = 1; i <= Number(count); i++) {
+      const nextIndex = currentCopiesCount + i;
+      copies.push({
+        id: await nextId('book_copies'),
+        book_id: id,
+        barcode: `BK${String(id).padStart(4, '0')}-${String(nextIndex).padStart(2, '0')}`,
+        status: 'available',
+        location: location || 'Kệ chung',
+        note: note || 'Bổ sung thêm',
+        created_at: new Date()
+      });
+    }
 
-      this.recalculateCopies(bookId);
+    if (copies.length) {
+      await db.collection('book_copies').insertMany(copies);
+    }
+
+    await this.recalculateCopies(id);
+    return this.getBookById(id);
+  }
+
+  async recalculateCopies(bookId) {
+    const db = await getDb();
+    const id = Number(bookId);
+    const [total, avail] = await Promise.all([
+      db.collection('book_copies').countDocuments({ book_id: id }),
+      db.collection('book_copies').countDocuments({ book_id: id, status: 'available' })
+    ]);
+
+    await db.collection('books').updateOne(
+      { id },
+      { $set: { total_copies: total, available_copies: avail } }
+    );
+  }
+
+  /**
+   * Danh sách bản sách còn sẵn sàng cho mượn (kèm thông tin sách).
+   */
+  async getAvailableCopies() {
+    const db = await getDb();
+    const copies = await db.collection('book_copies').find({ status: 'available' }).toArray();
+    if (copies.length === 0) return [];
+
+    const bookIds = [...new Set(copies.map(c => c.book_id))];
+    const [books, categories] = await Promise.all([
+      db.collection('books').find({ id: { $in: bookIds } }).toArray(),
+      db.collection('categories').find({}).toArray()
+    ]);
+
+    const bookMap = new Map(books.map(b => [b.id, b]));
+    const categoryMap = new Map(categories.map(c => [c.id, c]));
+
+    return copies.map(copy => {
+      const book = bookMap.get(copy.book_id) || {};
+      const category = categoryMap.get(book.category_id);
+      return {
+        ...copy,
+        title: book.title || null,
+        isbn: book.isbn || null,
+        cover_image: book.cover_image || null,
+        category_name: category ? category.name : null
+      };
+    }).sort((a, b) => String(a.title || '').localeCompare(String(b.title || ''))
+      || String(a.barcode || '').localeCompare(String(b.barcode || '')));
+  }
+
+  async getCategories() {
+    const db = await getDb();
+    return db.collection('categories').find({}).sort({ code: 1 }).toArray();
+  }
+
+  async getAuthors() {
+    const db = await getDb();
+    return db.collection('authors').find({}).sort({ name: 1 }).toArray();
+  }
+
+  async getPublishers() {
+    const db = await getDb();
+    return db.collection('publishers').find({}).sort({ name: 1 }).toArray();
+  }
+
+  async createCategory(code, name, description = '') {
+    const db = await getDb();
+    const normalizedCode = String(code || '').trim().toUpperCase();
+    const existing = await db.collection('categories').findOne({ code: normalizedCode });
+    if (existing) {
+      throw new Error(`Mã thể loại "${normalizedCode}" đã tồn tại.`);
+    }
+
+    const id = await nextId('categories');
+    await db.collection('categories').insertOne({
+      id,
+      code: normalizedCode,
+      name: String(name || '').trim(),
+      description: String(description || '').trim(),
+      created_at: new Date()
     });
 
-    tx();
-    return this.getBookById(bookId);
+    return id;
   }
 
-  recalculateCopies(bookId) {
-    const total = db.prepare('SELECT COUNT(*) as count FROM book_copies WHERE book_id = ?').get(bookId).count;
-    const avail = db.prepare("SELECT COUNT(*) as count FROM book_copies WHERE book_id = ? AND status = 'available'").get(bookId).count;
-    db.prepare('UPDATE books SET total_copies = ?, available_copies = ? WHERE id = ?').run(total, avail, bookId);
+  async createAuthor(name, bio = '') {
+    const db = await getDb();
+    const id = await nextId('authors');
+    await db.collection('authors').insertOne({
+      id,
+      name: String(name || '').trim(),
+      bio: String(bio || '').trim(),
+      created_at: new Date()
+    });
+    return id;
   }
 
-  getCategories() {
-    return db.prepare('SELECT * FROM categories ORDER BY code ASC').all();
-  }
-
-  getAuthors() {
-    return db.prepare('SELECT * FROM authors ORDER BY name ASC').all();
-  }
-
-  getPublishers() {
-    return db.prepare('SELECT * FROM publishers ORDER BY name ASC').all();
-  }
-
-  createCategory(code, name, description = '') {
-    const stmt = db.prepare('INSERT INTO categories (code, name, description) VALUES (?, ?, ?)');
-    return stmt.run(code.trim().toUpperCase(), name.trim(), description.trim());
-  }
-
-  createAuthor(name, bio = '') {
-    const stmt = db.prepare('INSERT INTO authors (name, bio) VALUES (?, ?)');
-    return stmt.run(name.trim(), bio.trim());
-  }
-
-  createPublisher(name, address = '', phone = '') {
-    const stmt = db.prepare('INSERT INTO publishers (name, address, phone) VALUES (?, ?, ?)');
-    return stmt.run(name.trim(), address.trim(), phone.trim());
+  async createPublisher(name, address = '', phone = '') {
+    const db = await getDb();
+    const id = await nextId('publishers');
+    await db.collection('publishers').insertOne({
+      id,
+      name: String(name || '').trim(),
+      address: String(address || '').trim(),
+      phone: String(phone || '').trim(),
+      created_at: new Date()
+    });
+    return id;
   }
 }
 

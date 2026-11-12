@@ -6,7 +6,7 @@
     </div>
     <div class="overflow-hidden">
       <h1 class="font-bold text-white text-base tracking-wide truncate"><%= libraryName %></h1>
-      <p class="text-xs text-slate-400">Đồ Án TKPM Chuẩn QĐ</p>
+      
     </div>
   </div>
 
@@ -28,6 +28,13 @@
 
   <!-- Navigation Menu -->
   <nav class="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto text-sm">
+    <% if (currentUser && currentUser.role === 'reader') { %>
+      <a href="/portal" class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition <%= currentPath.startsWith('/portal') ? 'bg-blue-600 text-white font-medium shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white' %>">
+        <i class="fa-solid fa-id-card-clip w-5 text-center"></i>
+        <span>Cổng Độc Giả</span>
+      </a>
+    <% } %>
+
     <% if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'librarian')) { %>
       <a href="/dashboard" class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition <%= currentPath === '/dashboard' ? 'bg-blue-600 text-white font-medium shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white' %>">
         <i class="fa-solid fa-chart-pie w-5 text-center text-slate-400 group-hover:text-white"></i>
@@ -63,6 +70,12 @@
       <a href="/fines" class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition <%= currentPath.startsWith('/fines') ? 'bg-blue-600 text-white font-medium shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white' %>">
         <i class="fa-solid fa-receipt w-5 text-center"></i>
         <span>Thu Tiền Phạt</span>
+      </a>
+
+
+      <a href="/reservations" class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition <%= currentPath.startsWith('/reservations') ? 'bg-blue-600 text-white font-medium shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white' %>">
+        <i class="fa-solid fa-bookmark w-5 text-center"></i>
+        <span>Đặt Mượn Online</span>
       </a>
 
       <div class="pt-3 pb-1 px-3 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">

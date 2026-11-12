@@ -2,15 +2,15 @@ const reportService = require('../services/reportService');
 const ruleService = require('../services/ruleService');
 
 class DashboardController {
-  index(req, res) {
+  async index(req, res) {
     try {
-      const stats = reportService.getDashboardStats();
-      const rules = ruleService.getRulesMap();
+      const stats = await reportService.getDashboardStats();
+      const rules = await ruleService.getRulesMap();
 
       // Get monthly borrow data for the chart (current year)
       const currentYear = new Date().getFullYear();
       const currentMonth = new Date().getMonth() + 1;
-      const categoryReport = reportService.getMonthlyBorrowByCategory(currentMonth, currentYear);
+      const categoryReport = await reportService.getMonthlyBorrowByCategory(currentMonth, currentYear);
 
       res.render('dashboard/index', {
         title: 'Bảng điều khiển - Tổng quan thư viện',

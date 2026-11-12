@@ -10,6 +10,8 @@ const fineController = require('../controllers/fineController');
 const ruleController = require('../controllers/ruleController');
 const reportController = require('../controllers/reportController');
 const userController = require('../controllers/userController');
+const portalController = require('../controllers/portalController');
+const reservationController = require('../controllers/reservationController');
 
 const { isAuthenticated, authorize } = require('../middleware/authMiddleware');
 
@@ -77,6 +79,15 @@ router.get('/fines/create', isAuthenticated, authorize('admin', 'librarian'), fi
 router.post('/fines', isAuthenticated, authorize('admin', 'librarian'), fineController.create);
 router.get('/fines/:id', isAuthenticated, fineController.showDetail);
 router.get('/fines/:id/print', isAuthenticated, fineController.printReceipt);
+
+// --- Reader Portal (Doc gia) ---
+router.get('/portal', isAuthenticated, authorize('reader'), portalController.index);
+router.post('/portal/reserve', isAuthenticated, authorize('reader'), portalController.reserveBook);
+router.post('/portal/reservations/:id/cancel', isAuthenticated, authorize('reader'), portalController.cancelReservation);
+
+// --- Book Reservations (Admin & Librarian) ---
+router.get('/reservations', isAuthenticated, authorize('admin', 'librarian'), reservationController.index);
+router.post('/reservations/:id/status', isAuthenticated, authorize('admin', 'librarian'), reservationController.updateStatus);
 
 // --- Business Rules (Admin only) ---
 router.get('/rules', isAuthenticated, authorize('admin'), ruleController.index);

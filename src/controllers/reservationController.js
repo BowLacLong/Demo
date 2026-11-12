@@ -1,9 +1,9 @@
 const reservationService = require('../services/reservationService');
 
 class ReservationController {
-  index(req, res) {
+  async index(req, res) {
     const { status } = req.query;
-    const reservations = reservationService.getAllReservations({ status });
+    const reservations = await reservationService.getAllReservations({ status });
 
     res.render('reservations/index', {
       title: 'Quản Lý Đặt Mượn Sách Online',
@@ -12,10 +12,10 @@ class ReservationController {
     });
   }
 
-  updateStatus(req, res) {
+  async updateStatus(req, res) {
     const { status } = req.body;
     try {
-      reservationService.updateStatus(req.params.id, status);
+      await reservationService.updateStatus(req.params.id, status);
       req.flash('success', 'Đã cập nhật trạng thái yêu cầu đặt mượn sách!');
       res.redirect('/reservations');
     } catch (err) {
@@ -25,4 +25,4 @@ class ReservationController {
   }
 }
 
-module.exports = new ReservationController;
+module.exports = new ReservationController();

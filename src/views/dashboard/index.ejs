@@ -1,285 +1,330 @@
 <%- include('../partials/layout-start') %>
 
-<!-- Top Hero / Welcome Banner -->
-<div class="mb-8 p-6 bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-900 rounded-3xl text-white shadow-xl relative overflow-hidden">
-  <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-    <div>
-      <span class="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-semibold tracking-wider uppercase inline-block mb-2">
-        Môn Thiết Kế Phần Mềm (TKPM) &bull; Đồ Án Cuối Kỳ
-      </span>
-      <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Xin chào, <%= currentUser ? currentUser.fullname : 'Bạn' %>! 👋</h1>
-      <p class="text-blue-100 text-sm mt-1 max-w-xl">
-        Hệ thống Quản lý Thư viện đáp ứng đầy đủ chuẩn quy định quy định hệ thống, kiến trúc 3 lớp, bảo mật phân quyền & kiểm thử tự động.
-      </p>
-    </div>
-    
-    <div class="flex flex-wrap gap-2.5">
-      <a href="/borrow/create" class="px-4 py-2.5 bg-white text-blue-700 hover:bg-blue-50 font-semibold text-xs rounded-xl shadow-md transition flex items-center gap-2">
-        <i class="fa-solid fa-plus-circle text-sm"></i>
-        <span>Lập Phiếu Mượn</span>
-      </a>
-      <a href="/books/create" class="px-4 py-2.5 bg-blue-600/60 hover:bg-blue-600 text-white font-semibold text-xs rounded-xl border border-white/20 transition flex items-center gap-2">
-        <i class="fa-solid fa-book-medical text-sm"></i>
-        <span>Nhập Sách</span>
-      </a>
+  <!-- Top Hero / Welcome Banner -->
+  <div
+    class="mb-8 p-6 bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-900 rounded-3xl text-white shadow-xl relative overflow-hidden">
+    <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+
+      <div class="flex flex-wrap gap-2.5">
+        <a href="/borrow/create"
+          class="px-4 py-2.5 bg-white text-blue-700 hover:bg-blue-50 font-semibold text-xs rounded-xl shadow-md transition flex items-center gap-2">
+          <i class="fa-solid fa-plus-circle text-sm"></i>
+          <span>Lập Phiếu Mượn</span>
+        </a>
+        <a href="/books/create"
+          class="px-4 py-2.5 bg-blue-600/60 hover:bg-blue-600 text-white font-semibold text-xs rounded-xl border border-white/20 transition flex items-center gap-2">
+          <i class="fa-solid fa-book-medical text-sm"></i>
+          <span>Nhập Sách</span>
+        </a>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- KPI Summary Cards -->
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-  <!-- Total Books -->
-  <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition">
-    <div class="flex items-center justify-between">
+  <!-- KPI Summary Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+    <!-- Total Books -->
+    <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tổng Tựa Sách</p>
+          <h3 class="text-2xl font-black text-slate-800 mt-1">
+            <%= stats.totalBooks || 0 %>
+          </h3>
+          <p class="text-[11px] text-slate-400 mt-1">
+            <span class="text-emerald-600 font-semibold">
+              <%= stats.totalCopies || 0 %>
+            </span> bản sách cá biệt
+          </p>
+        </div>
+        <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+          <i class="fa-solid fa-book"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Total Readers -->
+    <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Thẻ Độc Giả</p>
+          <h3 class="text-2xl font-black text-slate-800 mt-1">
+            <%= stats.totalReaders || 0 %>
+          </h3>
+          <p class="text-[11px] text-slate-400 mt-1">Đang hoạt động & còn hạn</p>
+        </div>
+        <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl">
+          <i class="fa-solid fa-id-card"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Borrows -->
+    <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Đang Cho Mượn</p>
+          <h3 class="text-2xl font-black text-blue-600 mt-1">
+            <%= stats.activeBorrows || 0 %>
+          </h3>
+          <p class="text-[11px] text-slate-400 mt-1">Cuốn sách đang lưu hành</p>
+        </div>
+        <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+          <i class="fa-solid fa-book-open-reader"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overdue Alert -->
+    <div
+      class="bg-white p-5 rounded-2xl border <%= stats.overdueCount > 0 ? 'border-red-300 bg-red-50/20' : 'border-slate-200/80' %> shadow-xs hover:shadow-md transition">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Sách Quá Hạn</p>
+          <h3 class="text-2xl font-black <%= stats.overdueCount > 0 ? 'text-red-600' : 'text-slate-800' %> mt-1">
+            <%= stats.overdueCount || 0 %>
+          </h3>
+          <p class="text-[11px] text-slate-400 mt-1">
+            Nợ phạt: <span class="font-semibold text-red-600">
+              <%= (stats.totalDebt || 0).toLocaleString('vi-VN') %> đ
+            </span>
+          </p>
+        </div>
+        <div
+          class="w-12 h-12 rounded-xl <%= stats.overdueCount > 0 ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-400' %> flex items-center justify-center text-xl">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Section -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <!-- Chart 1: Borrow by Category -->
+    <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs lg:col-span-2">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="font-bold text-slate-800 text-base">Tỉ lệ mượn sách theo Thể loại</h3>
+          <p class="text-xs text-slate-500">Tháng <%= currentMonth %> / <%= currentYear %> &bull; Phân tích tần suất lưu
+                hành</p>
+        </div>
+        <a href="/reports/categories" class="text-xs text-blue-600 font-semibold hover:underline">Chi tiết &rarr;</a>
+      </div>
+      <div class="h-64 flex items-center justify-center">
+        <canvas id="categoryChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Quick Info & Rules Snapshot -->
+    <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
       <div>
-        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tổng Tựa Sách</p>
-        <h3 class="text-2xl font-black text-slate-800 mt-1"><%= stats.totalBooks || 0 %></h3>
-        <p class="text-[11px] text-slate-400 mt-1">
-          <span class="text-emerald-600 font-semibold"><%= stats.totalCopies || 0 %></span> bản sách cá biệt
-        </p>
-      </div>
-      <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
-        <i class="fa-solid fa-book"></i>
-      </div>
-    </div>
-  </div>
-
-  <!-- Total Readers -->
-  <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Thẻ Độc Giả</p>
-        <h3 class="text-2xl font-black text-slate-800 mt-1"><%= stats.totalReaders || 0 %></h3>
-        <p class="text-[11px] text-slate-400 mt-1">Đang hoạt động & còn hạn</p>
-      </div>
-      <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl">
-        <i class="fa-solid fa-id-card"></i>
-      </div>
-    </div>
-  </div>
-
-  <!-- Active Borrows -->
-  <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Đang Cho Mượn</p>
-        <h3 class="text-2xl font-black text-blue-600 mt-1"><%= stats.activeBorrows || 0 %></h3>
-        <p class="text-[11px] text-slate-400 mt-1">Cuốn sách đang lưu hành</p>
-      </div>
-      <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
-        <i class="fa-solid fa-book-open-reader"></i>
-      </div>
-    </div>
-  </div>
-
-  <!-- Overdue Alert -->
-  <div class="bg-white p-5 rounded-2xl border <%= stats.overdueCount > 0 ? 'border-red-300 bg-red-50/20' : 'border-slate-200/80' %> shadow-xs hover:shadow-md transition">
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Sách Quá Hạn</p>
-        <h3 class="text-2xl font-black <%= stats.overdueCount > 0 ? 'text-red-600' : 'text-slate-800' %> mt-1"><%= stats.overdueCount || 0 %></h3>
-        <p class="text-[11px] text-slate-400 mt-1">
-          Nợ phạt: <span class="font-semibold text-red-600"><%= (stats.totalDebt || 0).toLocaleString('vi-VN') %> đ</span>
-        </p>
-      </div>
-      <div class="w-12 h-12 rounded-xl <%= stats.overdueCount > 0 ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-400' %> flex items-center justify-center text-xl">
-        <i class="fa-solid fa-triangle-exclamation"></i>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Charts Section -->
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-  <!-- Chart 1: Borrow by Category -->
-  <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs lg:col-span-2">
-    <div class="flex items-center justify-between mb-4">
-      <div>
-        <h3 class="font-bold text-slate-800 text-base">Tỉ lệ mượn sách theo Thể loại</h3>
-        <p class="text-xs text-slate-500">Tháng <%= currentMonth %> / <%= currentYear %> &bull; Phân tích tần suất lưu hành</p>
-      </div>
-      <a href="/reports/categories" class="text-xs text-blue-600 font-semibold hover:underline">Chi tiết &rarr;</a>
-    </div>
-    <div class="h-64 flex items-center justify-center">
-      <canvas id="categoryChart"></canvas>
-    </div>
-  </div>
-
-  <!-- Quick Info & Rules Snapshot -->
-  <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
-    <div>
-      <div class="flex items-center justify-between mb-3">
-        <h3 class="font-bold text-slate-800 text-base">Thông số Quy định (QĐ)</h3>
-        <a href="/rules" class="text-xs text-blue-600 font-semibold hover:underline">Cấu hình</a>
-      </div>
-      <div class="space-y-3 text-xs">
-        <div class="flex items-center justify-between py-2 border-b border-slate-100">
-          <span class="text-slate-600">Năm XB tối đa</span>
-          <span class="font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md"><%= rules.max_publish_years_gap || 8 %> năm</span>
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-bold text-slate-800 text-base">Thông số Quy định (QĐ)</h3>
+          <a href="/rules" class="text-xs text-blue-600 font-semibold hover:underline">Cấu hình</a>
         </div>
-        <div class="flex items-center justify-between py-2 border-b border-slate-100">
-          <span class="text-slate-600">Độ tuổi độc giả</span>
-          <span class="font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md"><%= rules.min_reader_age || 18 %> - <%= rules.max_reader_age || 55 %> tuổi</span>
-        </div>
-        <div class="flex items-center justify-between py-2 border-b border-slate-100">
-          <span class="text-slate-600">Hạn thẻ độc giả</span>
-          <span class="font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md"><%= rules.card_valid_months || 6 %> tháng</span>
-        </div>
-        <div class="flex items-center justify-between py-2 border-b border-slate-100">
-          <span class="text-slate-600">Sách mượn tối đa</span>
-          <span class="font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md"><%= rules.max_borrow_books || 5 %> cuốn</span>
-        </div>
-        <div class="flex items-center justify-between py-2 border-b border-slate-100">
-          <span class="text-slate-600">Số ngày mượn</span>
-          <span class="font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md"><%= rules.max_borrow_days || 14 %> ngày</span>
-        </div>
-        <div class="flex items-center justify-between py-2">
-          <span class="text-slate-600">Phạt trễ hạn</span>
-          <span class="font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-md"><%= (rules.fine_per_day || 1000).toLocaleString('vi-VN') %> đ / ngày</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="mt-4 pt-3 border-t border-slate-100 text-center">
-      <span class="text-[11px] text-slate-400 block mb-2">Đã thu tiền phạt: <strong><%= (stats.totalCollected || 0).toLocaleString('vi-VN') %> VNĐ</strong></span>
-      <a href="/fines/create" class="block w-full py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold rounded-xl border border-emerald-200 transition">
-        <i class="fa-solid fa-receipt mr-1"></i> Thu Tiền Phạt
-      </a>
-    </div>
-  </div>
-</div>
-
-<!-- Two Columns: Recent Borrows & Top Books -->
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-  <!-- Recent Borrow Tickets -->
-  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 lg:col-span-2">
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="font-bold text-slate-800 text-base">Hoạt động mượn sách gần đây</h3>
-      <a href="/borrow" class="text-xs text-blue-600 font-semibold hover:underline">Xem tất cả &rarr;</a>
-    </div>
-
-    <div class="overflow-x-auto">
-      <table class="w-full text-left text-xs">
-        <thead class="bg-slate-50 text-slate-500 font-semibold uppercase tracking-wider border-b border-slate-200">
-          <tr>
-            <th class="py-2.5 px-3">Mã Phiếu</th>
-            <th class="py-2.5 px-3">Độc Giả</th>
-            <th class="py-2.5 px-3">Ngày Mượn</th>
-            <th class="py-2.5 px-3">Hạn Trả</th>
-            <th class="py-2.5 px-3">Số Lượng</th>
-            <th class="py-2.5 px-3 text-right">Trạng Thái</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100">
-          <% if (stats.recentBorrows && stats.recentBorrows.length > 0) { %>
-            <% stats.recentBorrows.forEach(b => { %>
-              <tr class="hover:bg-slate-50/80 transition">
-                <td class="py-3 px-3 font-bold text-blue-600">
-                  <a href="/borrow/<%= b.id %>" class="hover:underline"><%= b.ticket_code %></a>
-                </td>
-                <td class="py-3 px-3">
-                  <div class="font-medium text-slate-800"><%= b.reader_name %></div>
-                  <div class="text-[10px] text-slate-400"><%= b.reader_code %></div>
-                </td>
-                <td class="py-3 px-3 text-slate-600"><%= b.borrow_date %></td>
-                <td class="py-3 px-3 text-slate-600"><%= b.due_date %></td>
-                <td class="py-3 px-3 font-semibold"><%= b.book_count %> cuốn</td>
-                <td class="py-3 px-3 text-right">
-                  <% if (b.status === 'borrowing') { %>
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">Đang mượn</span>
-                  <% } else if (b.status === 'overdue') { %>
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-800">Quá hạn</span>
-                  <% } else { %>
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-800">Đã trả</span>
-                  <% } %>
-                </td>
-              </tr>
-            <% }) %>
-          <% } else { %>
-            <tr>
-              <td colspan="6" class="text-center py-6 text-slate-400">Chưa có giao dịch mượn nào</td>
-            </tr>
-          <% } %>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Top Books -->
-  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6">
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="font-bold text-slate-800 text-base">Top sách mượn nhiều</h3>
-      <a href="/books" class="text-xs text-blue-600 font-semibold hover:underline">Kho sách &rarr;</a>
-    </div>
-
-    <div class="space-y-3.5">
-      <% if (stats.topBooks && stats.topBooks.length > 0) { %>
-        <% stats.topBooks.forEach((book, idx) => { %>
-          <div class="flex items-center gap-3">
-            <div class="w-6 h-6 rounded-full bg-slate-100 text-slate-700 font-black text-xs flex items-center justify-center shrink-0">
-              <%= idx + 1 %>
-            </div>
-            <img src="<%= book.cover_image || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=100' %>" 
-                 class="w-10 h-14 object-cover rounded-md shadow-xs shrink-0" alt="Cover" />
-            <div class="min-w-0 flex-1">
-              <a href="/books/<%= book.id %>" class="font-semibold text-xs text-slate-800 truncate block hover:text-blue-600">
-                <%= book.title %>
-              </a>
-              <span class="text-[11px] text-slate-400 truncate block"><%= book.category_name %></span>
-            </div>
-            <div class="text-right shrink-0">
-              <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full"><%= book.borrow_count %> lượt</span>
-            </div>
+        <div class="space-y-3 text-xs">
+          <div class="flex items-center justify-between py-2 border-b border-slate-100">
+            <span class="text-slate-600">Năm XB tối đa</span>
+            <span class="font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md">
+              <%= rules.max_publish_years_gap || 8 %> năm
+            </span>
           </div>
-        <% }) %>
-      <% } else { %>
-        <p class="text-xs text-slate-400 text-center py-6">Chưa có số liệu thống kê sách mượn</p>
-      <% } %>
+          <div class="flex items-center justify-between py-2 border-b border-slate-100">
+            <span class="text-slate-600">Độ tuổi độc giả</span>
+            <span class="font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md">
+              <%= rules.min_reader_age || 18 %> - <%= rules.max_reader_age || 55 %> tuổi
+            </span>
+          </div>
+          <div class="flex items-center justify-between py-2 border-b border-slate-100">
+            <span class="text-slate-600">Hạn thẻ độc giả</span>
+            <span class="font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md">
+              <%= rules.card_valid_months || 6 %> tháng
+            </span>
+          </div>
+          <div class="flex items-center justify-between py-2 border-b border-slate-100">
+            <span class="text-slate-600">Sách mượn tối đa</span>
+            <span class="font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md">
+              <%= rules.max_borrow_books || 5 %> cuốn
+            </span>
+          </div>
+          <div class="flex items-center justify-between py-2 border-b border-slate-100">
+            <span class="text-slate-600">Số ngày mượn</span>
+            <span class="font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md">
+              <%= rules.max_borrow_days || 14 %> ngày
+            </span>
+          </div>
+          <div class="flex items-center justify-between py-2">
+            <span class="text-slate-600">Phạt trễ hạn</span>
+            <span class="font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-md">
+              <%= (rules.fine_per_day || 1000).toLocaleString('vi-VN') %> đ / ngày
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4 pt-3 border-t border-slate-100 text-center">
+        <span class="text-[11px] text-slate-400 block mb-2">Đã thu tiền phạt: <strong>
+            <%= (stats.totalCollected || 0).toLocaleString('vi-VN') %> VNĐ
+          </strong></span>
+        <a href="/fines/create"
+          class="block w-full py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold rounded-xl border border-emerald-200 transition">
+          <i class="fa-solid fa-receipt mr-1"></i> Thu Tiền Phạt
+        </a>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- Chart Initialization Script -->
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const ctx = document.getElementById('categoryChart').getContext('2d');
-    
-    const catLabels = <%- JSON.stringify((categoryReport.categories || []).map(c => c.category_name)) %>;
-    const catCounts = <%- JSON.stringify((categoryReport.categories || []).map(c => c.borrow_count)) %>;
+  <!-- Two Columns: Recent Borrows & Top Books -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Recent Borrow Tickets -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 lg:col-span-2">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-bold text-slate-800 text-base">Hoạt động mượn sách gần đây</h3>
+        <a href="/borrow" class="text-xs text-blue-600 font-semibold hover:underline">Xem tất cả &rarr;</a>
+      </div>
 
-    new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: catLabels.length ? catLabels : ['CNTT', 'Kỹ thuật', 'Kinh tế', 'Ngoại ngữ', 'Văn học'],
-        datasets: [{
-          label: 'Số lượt mượn (lần)',
-          data: catCounts.length ? catCounts : [12, 8, 5, 4, 9],
-          backgroundColor: [
-            'rgba(37, 99, 235, 0.8)',
-            'rgba(79, 70, 229, 0.8)',
-            'rgba(16, 185, 129, 0.8)',
-            'rgba(245, 158, 11, 0.8)',
-            'rgba(236, 72, 153, 0.8)',
-            'rgba(14, 165, 233, 0.8)'
-          ],
-          borderRadius: 8
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false }
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-50 text-slate-500 font-semibold uppercase tracking-wider border-b border-slate-200">
+            <tr>
+              <th class="py-2.5 px-3">Mã Phiếu</th>
+              <th class="py-2.5 px-3">Độc Giả</th>
+              <th class="py-2.5 px-3">Ngày Mượn</th>
+              <th class="py-2.5 px-3">Hạn Trả</th>
+              <th class="py-2.5 px-3">Số Lượng</th>
+              <th class="py-2.5 px-3 text-right">Trạng Thái</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <% if (stats.recentBorrows && stats.recentBorrows.length> 0) { %>
+              <% stats.recentBorrows.forEach(b=> { %>
+                <tr class="hover:bg-slate-50/80 transition">
+                  <td class="py-3 px-3 font-bold text-blue-600">
+                    <a href="/borrow/<%= b.id %>" class="hover:underline">
+                      <%= b.ticket_code %>
+                    </a>
+                  </td>
+                  <td class="py-3 px-3">
+                    <div class="font-medium text-slate-800">
+                      <%= b.reader_name %>
+                    </div>
+                    <div class="text-[10px] text-slate-400">
+                      <%= b.reader_code %>
+                    </div>
+                  </td>
+                  <td class="py-3 px-3 text-slate-600">
+                    <%= b.borrow_date %>
+                  </td>
+                  <td class="py-3 px-3 text-slate-600">
+                    <%= b.due_date %>
+                  </td>
+                  <td class="py-3 px-3 font-semibold">
+                    <%= b.book_count %> cuốn
+                  </td>
+                  <td class="py-3 px-3 text-right">
+                    <% if (b.status==='borrowing' ) { %>
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">Đang
+                        mượn</span>
+                      <% } else if (b.status==='overdue' ) { %>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-800">Quá
+                          hạn</span>
+                        <% } else { %>
+                          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-800">Đã
+                            trả</span>
+                          <% } %>
+                  </td>
+                </tr>
+                <% }) %>
+                  <% } else { %>
+                    <tr>
+                      <td colspan="6" class="text-center py-6 text-slate-400">Chưa có giao dịch mượn nào</td>
+                    </tr>
+                    <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Top Books -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-bold text-slate-800 text-base">Top sách mượn nhiều</h3>
+        <a href="/books" class="text-xs text-blue-600 font-semibold hover:underline">Kho sách &rarr;</a>
+      </div>
+
+      <div class="space-y-3.5">
+        <% if (stats.topBooks && stats.topBooks.length> 0) { %>
+          <% stats.topBooks.forEach((book, idx)=> { %>
+            <div class="flex items-center gap-3">
+              <div
+                class="w-6 h-6 rounded-full bg-slate-100 text-slate-700 font-black text-xs flex items-center justify-center shrink-0">
+                <%= idx + 1 %>
+              </div>
+              <img src="<%= book.cover_image || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=100' %>"
+                class="w-10 h-14 object-cover rounded-md shadow-xs shrink-0" alt="Cover" />
+              <div class="min-w-0 flex-1">
+                <a href="/books/<%= book.id %>"
+                  class="font-semibold text-xs text-slate-800 truncate block hover:text-blue-600">
+                  <%= book.title %>
+                </a>
+                <span class="text-[11px] text-slate-400 truncate block">
+                  <%= book.category_name %>
+                </span>
+              </div>
+              <div class="text-right shrink-0">
+                <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                  <%= book.borrow_count %> lượt
+                </span>
+              </div>
+            </div>
+            <% }) %>
+              <% } else { %>
+                <p class="text-xs text-slate-400 text-center py-6">Chưa có số liệu thống kê sách mượn</p>
+                <% } %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart Initialization Script -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const ctx = document.getElementById('categoryChart').getContext('2d');
+
+      const catLabels = <% - JSON.stringify((categoryReport.categories || []).map(c => c.category_name)) %>;
+      const catCounts = <% - JSON.stringify((categoryReport.categories || []).map(c => c.borrow_count)) %>;
+
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: catLabels.length ? catLabels : ['CNTT', 'Kỹ thuật', 'Kinh tế', 'Ngoại ngữ', 'Văn học'],
+          datasets: [{
+            label: 'Số lượt mượn (lần)',
+            data: catCounts.length ? catCounts : [12, 8, 5, 4, 9],
+            backgroundColor: [
+              'rgba(37, 99, 235, 0.8)',
+              'rgba(79, 70, 229, 0.8)',
+              'rgba(16, 185, 129, 0.8)',
+              'rgba(245, 158, 11, 0.8)',
+              'rgba(236, 72, 153, 0.8)',
+              'rgba(14, 165, 233, 0.8)'
+            ],
+            borderRadius: 8
+          }]
         },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: { precision: 0 }
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { precision: 0 }
+            }
           }
         }
-      }
+      });
     });
-  });
-</script>
+  </script>
 
-<%- include('../partials/layout-end') %>
+  <%- include('../partials/layout-end') %>

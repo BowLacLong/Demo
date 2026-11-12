@@ -1,84 +1,121 @@
-const db = require('../config/db');
+const { getDb, nextId } = require('../config/db');
 const ruleService = require('./ruleService');
+const { escapeRegex } = require('../utils/search');
 
 class FineService {
-  getAllReceipts({ search = '', readerId = '', limit = 100, offset = 0 } = {}) {
-    let sql = `
-      SELECT fr.*, r.fullname as reader_name, r.reader_code, r.phone as reader_phone,
-             u.fullname as creator_name
-      FROM fine_receipts fr
-      JOIN readers r ON fr.reader_id = r.id
-      LEFT JOIN users u ON fr.created_by = u.id
-      WHERE 1=1
-    `;
-    const params = [];
+  async getAllReceipts({ search = '', readerId = '', limit = 100, offset = 0 } = {}) {
+    const db = await getDb();
+    const filter = {};
 
-    if (search && search.trim() !== '') {
-      sql += ` AND (fr.receipt_code LIKE ? OR r.fullname LIKE ? OR r.reader_code LIKE ?)`;
-      const term = `%${search.trim()}%`;
-      params.push(term, term, term);
+    if (readerId) filter.reader_id = Number(readerId);
+
+    if (search && String(search).trim() !== '') {
+      const regex = { $regex: escapeRegex(String(search).trim()), $options: 'i' };
+      const matchedReaders = await db.collection('readers')
+        .find({ $or: [{ fullname: regex }, { reader_code: regex }] })
+        .project({ id: 1 })
+        .toArray();
+
+      filter.$or = [
+        { receipt_code: regex },
+        ...(matchedReaders.length ? [{ reader_id: { $in: matchedReaders.map(r => r.id) } }] : [])
+      ];
     }
 
-    if (readerId) {
-      sql += ` AND fr.reader_id = ?`;
-      params.push(readerId);
-    }
+    const receipts = await db.collection('fine_receipts')
+      .find(filter)
+      .sort({ id: -1 })
+      .skip(Number(offset) || 0)
+      .limit(Number(limit) || 100)
+      .toArray();
 
-    sql += ` ORDER BY fr.id DESC LIMIT ? OFFSET ?`;
-    params.push(limit, offset);
-
-    return db.prepare(sql).all(...params);
+    return this.attachRelations(receipts);
   }
 
-  getReceiptById(id) {
-    return db.prepare(`
-      SELECT fr.*, r.fullname as reader_name, r.reader_code, r.phone as reader_phone,
-             r.email as reader_email, r.address as reader_address,
-             u.fullname as creator_name
-      FROM fine_receipts fr
-      JOIN readers r ON fr.reader_id = r.id
-      LEFT JOIN users u ON fr.created_by = u.id
-      WHERE fr.id = ?
-    `).get(id);
+  async attachRelations(receipts) {
+    if (receipts.length === 0) return [];
+
+    const db = await getDb();
+    const readerIds = [...new Set(receipts.map(r => r.reader_id).filter(Boolean))];
+    const userIds = [...new Set(receipts.map(r => r.created_by).filter(Boolean))];
+
+    const [readers, users] = await Promise.all([
+      readerIds.length ? db.collection('readers').find({ id: { $in: readerIds } }).toArray() : [],
+      userIds.length ? db.collection('users').find({ id: { $in: userIds } }).project({ id: 1, fullname: 1 }).toArray() : []
+    ]);
+
+    const readerMap = new Map(readers.map(r => [r.id, r]));
+    const userMap = new Map(users.map(u => [u.id, u.fullname]));
+
+    return receipts.map(r => {
+      const reader = readerMap.get(r.reader_id);
+      return {
+        ...r,
+        reader_name: reader ? reader.fullname : null,
+        reader_code: reader ? reader.reader_code : null,
+        reader_phone: reader ? reader.phone : null,
+        reader_email: reader ? reader.email : null,
+        reader_address: reader ? reader.address : null,
+        creator_name: userMap.get(r.created_by) || null
+      };
+    });
   }
 
-  createReceipt({ readerId, collectedAmount, userId = null, note = '' }) {
-    // 1. Kiểm tra Số tiền thu không được vượt quá số tiền độc giả đang nợ
-    const validation = ruleService.validateFineCollection(readerId, collectedAmount);
+  async getReceiptById(id) {
+    const db = await getDb();
+    const receipt = await db.collection('fine_receipts').findOne({ id: Number(id) });
+    if (!receipt) return null;
+
+    const [withRelations] = await this.attachRelations([receipt]);
+    return withRelations;
+  }
+
+  async createReceipt({ readerId, collectedAmount, userId = null, note = '' }) {
+    // 1. Kiểm tra số tiền thu không được vượt quá số tiền độc giả đang nợ
+    const validation = await ruleService.validateFineCollection(readerId, collectedAmount);
     if (!validation.valid) {
       throw new Error(validation.message);
     }
 
     const { totalDebt, collectedAmount: amount, remainingDebt } = validation;
+    const db = await getDb();
 
-    // Generate receipt code: PT0001
-    const lastId = db.prepare('SELECT MAX(id) as maxId FROM fine_receipts').get().maxId || 0;
-    const receiptCode = `PT${String(lastId + 1).padStart(4, '0')}`;
+    const id = await nextId('fine_receipts');
+    const receiptCode = `PT${String(id).padStart(4, '0')}`;
 
-    const insertReceipt = db.prepare(`
-      INSERT INTO fine_receipts (receipt_code, reader_id, total_debt, collected_amount, remaining_debt, created_by, note)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    const updateReaderDebt = db.prepare('UPDATE readers SET total_debt = ? WHERE id = ?');
-
-    let newReceiptId;
-    const tx = db.transaction(() => {
-      const res = insertReceipt.run(
-        receiptCode,
-        readerId,
-        totalDebt,
-        amount,
-        remainingDebt,
-        userId,
-        note
-      );
-      newReceiptId = res.lastInsertRowid;
-      updateReaderDebt.run(remainingDebt, readerId);
+    await db.collection('fine_receipts').insertOne({
+      id,
+      receipt_code: receiptCode,
+      reader_id: Number(readerId),
+      total_debt: totalDebt,
+      collected_amount: amount,
+      remaining_debt: remainingDebt,
+      receipt_date: new Date().toISOString(),
+      created_by: userId ? Number(userId) : null,
+      note: note || ''
     });
 
-    tx();
-    return this.getReceiptById(newReceiptId);
+    await db.collection('readers').updateOne(
+      { id: Number(readerId) },
+      { $set: { total_debt: remainingDebt } }
+    );
+
+    return this.getReceiptById(id);
+  }
+
+  /**
+   * Danh sách độc giả đang nợ phạt (dùng cho form lập phiếu thu).
+   */
+  async getDebtors() {
+    const db = await getDb();
+    const readers = await db.collection('readers').find({ total_debt: { $gt: 0 } }).sort({ total_debt: -1 }).toArray();
+    const types = await db.collection('reader_types').find({}).toArray();
+    const typeMap = new Map(types.map(t => [t.id, t]));
+
+    return readers.map(r => {
+      const type = typeMap.get(r.reader_type_id);
+      return { ...r, type_name: type ? type.name : null };
+    });
   }
 }
 

@@ -26,6 +26,21 @@ jobs:
       matrix:
         node: [20, 22]
 
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      MONGODB_URI: mongodb://127.0.0.1:27017
+      MONGODB_DB: library_test
+
     steps:
       - name: Lấy mã nguồn
         uses: actions/checkout@v4
@@ -54,6 +69,8 @@ jobs:
           NODE_ENV: production
           PORT: '3000'
           SESSION_SECRET: ci-only-secret
+          MONGODB_URI: mongodb://127.0.0.1:27017
+          MONGODB_DB: library
         run: |
           set -euo pipefail
           npm start > server.log 2>&1 &

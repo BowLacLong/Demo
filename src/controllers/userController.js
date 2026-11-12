@@ -2,9 +2,11 @@ const userService = require('../services/userService');
 const readerService = require('../services/readerService');
 
 class UserController {
-  index(req, res) {
-    const users = userService.getAllUsers();
-    const readers = readerService.getAllReaders();
+  async index(req, res) {
+    const [users, readers] = await Promise.all([
+      userService.getAllUsers(),
+      readerService.getAllReaders()
+    ]);
 
     res.render('users/index', {
       title: 'Quản lý Người dùng & Phân quyền',
@@ -13,9 +15,9 @@ class UserController {
     });
   }
 
-  create(req, res) {
+  async create(req, res) {
     try {
-      userService.createUser(req.body);
+      await userService.createUser(req.body);
       req.flash('success', `Đã tạo tài khoản "${req.body.username}" thành công!`);
       res.redirect('/users');
     } catch (err) {
@@ -24,9 +26,9 @@ class UserController {
     }
   }
 
-  update(req, res) {
+  async update(req, res) {
     try {
-      userService.updateUser(req.params.id, req.body);
+      await userService.updateUser(req.params.id, req.body);
       req.flash('success', 'Cập nhật tài khoản thành công!');
       res.redirect('/users');
     } catch (err) {
@@ -35,9 +37,9 @@ class UserController {
     }
   }
 
-  resetPassword(req, res) {
+  async resetPassword(req, res) {
     try {
-      userService.resetPassword(req.params.id, '123456');
+      await userService.resetPassword(req.params.id, '123456');
       req.flash('success', 'Đã đặt lại mật khẩu về mặc định: 123456');
       res.redirect('/users');
     } catch (err) {
@@ -46,9 +48,9 @@ class UserController {
     }
   }
 
-  delete(req, res) {
+  async delete(req, res) {
     try {
-      userService.deleteUser(req.params.id);
+      await userService.deleteUser(req.params.id);
       req.flash('success', 'Đã xoá tài khoản thành công.');
       res.redirect('/users');
     } catch (err) {

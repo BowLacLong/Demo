@@ -3,15 +3,15 @@ const ruleService = require('../services/ruleService');
 const { exportToExcel } = require('../utils/excelExport');
 
 class ReaderController {
-  index(req, res) {
+  async index(req, res) {
     const { search, type_id, status } = req.query;
-    const readers = readerService.getAllReaders({
+    const readers = await readerService.getAllReaders({
       search,
       typeId: type_id,
       status
     });
 
-    const readerTypes = readerService.getReaderTypes();
+    const readerTypes = await readerService.getReaderTypes();
 
     res.render('readers/index', {
       title: 'Quản lý Độc giả & Thẻ thư viện',
@@ -21,11 +21,13 @@ class ReaderController {
     });
   }
 
-  showCreate(req, res) {
-    const readerTypes = readerService.getReaderTypes();
-    const minAge = ruleService.getRule('min_reader_age', 18);
-    const maxAge = ruleService.getRule('max_reader_age', 55);
-    const cardMonths = ruleService.getRule('card_valid_months', 6);
+  async showCreate(req, res) {
+    const readerTypes = await readerService.getReaderTypes();
+    const [minAge, maxAge, cardMonths] = await Promise.all([
+      ruleService.getRule('min_reader_age', 18),
+      ruleService.getRule('max_reader_age', 55),
+      ruleService.getRule('card_valid_months', 6)
+    ]);
 
     const today = new Date();
     const maxDob = new Date(today.getFullYear() - minAge, today.getMonth(), today.getDate()).toISOString().split('T')[0];
@@ -43,9 +45,9 @@ class ReaderController {
     });
   }
 
-  create(req, res) {
+  async create(req, res) {
     try {
-      const newReader = readerService.createReader(req.body);
+      const newReader = await readerService.createReader(req.body);
       req.flash('success', `Đã lập thẻ độc giả thành công! Mã thẻ: ${newReader.reader_code}`);
       res.redirect(`/readers/${newReader.id}`);
     } catch (err) {
@@ -54,14 +56,14 @@ class ReaderController {
     }
   }
 
-  showDetail(req, res) {
-    const reader = readerService.getReaderById(req.params.id);
+  async showDetail(req, res) {
+    const reader = await readerService.getReaderById(req.params.id);
     if (!reader) {
       req.flash('error', 'Không tìm thấy độc giả.');
       return res.redirect('/readers');
     }
 
-    const { tickets, receipts } = readerService.getReaderHistory(reader.id);
+    const { tickets, receipts } = await readerService.getReaderHistory(reader.id);
 
     res.render('readers/detail', {
       title: `Thẻ độc giả: ${reader.fullname}`,
@@ -71,16 +73,18 @@ class ReaderController {
     });
   }
 
-  showEdit(req, res) {
-    const reader = readerService.getReaderById(req.params.id);
+  async showEdit(req, res) {
+    const reader = await readerService.getReaderById(req.params.id);
     if (!reader) {
       req.flash('error', 'Không tìm thấy độc giả.');
       return res.redirect('/readers');
     }
 
-    const readerTypes = readerService.getReaderTypes();
-    const minAge = ruleService.getRule('min_reader_age', 18);
-    const maxAge = ruleService.getRule('max_reader_age', 55);
+    const readerTypes = await readerService.getReaderTypes();
+    const [minAge, maxAge] = await Promise.all([
+      ruleService.getRule('min_reader_age', 18),
+      ruleService.getRule('max_reader_age', 55)
+    ]);
 
     res.render('readers/edit', {
       title: `Chỉnh sửa thẻ: ${reader.fullname}`,
@@ -91,9 +95,9 @@ class ReaderController {
     });
   }
 
-  update(req, res) {
+  async update(req, res) {
     try {
-      readerService.updateReader(req.params.id, req.body);
+      await readerService.updateReader(req.params.id, req.body);
       req.flash('success', 'Cập nhật thông tin thẻ độc giả thành công!');
       res.redirect(`/readers/${req.params.id}`);
     } catch (err) {
@@ -102,10 +106,10 @@ class ReaderController {
     }
   }
 
-  extend(req, res) {
+  async extend(req, res) {
     const { months } = req.body;
     try {
-      const reader = readerService.extendCard(req.params.id, Number(months) || 6);
+      const reader = await readerService.extendCard(req.params.id, Number(months) || 6);
       req.flash('success', `Đã gia hạn thẻ độc giả thành công đến ngày ${reader.expiry_date}!`);
       res.redirect(`/readers/${req.params.id}`);
     } catch (err) {
@@ -114,9 +118,9 @@ class ReaderController {
     }
   }
 
-  delete(req, res) {
+  async delete(req, res) {
     try {
-      readerService.deleteReader(req.params.id);
+      await readerService.deleteReader(req.params.id);
       req.flash('success', 'Đã xoá thẻ độc giả thành công.');
       res.redirect('/readers');
     } catch (err) {
@@ -125,8 +129,8 @@ class ReaderController {
     }
   }
 
-  exportExcel(req, res) {
-    const readers = readerService.getAllReaders();
+  async exportExcel(req, res) {
+    const readers = await readerService.getAllReaders();
     const exportData = readers.map((r, idx) => ({
       STT: idx + 1,
       'Mã Độc Giả': r.reader_code,

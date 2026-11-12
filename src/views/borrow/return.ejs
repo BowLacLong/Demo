@@ -1,177 +1,195 @@
 <%- include('../partials/layout-start') %>
 
-<div class="max-w-4xl mx-auto space-y-6">
-  <!-- Guidance Card for  -->
-  <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-start gap-3">
-    <i class="fa-solid fa-circle-info text-emerald-600 text-lg mt-0.5"></i>
-    <div class="text-xs text-emerald-900 leading-relaxed">
-      <span class="font-bold">Quy định 4 - Nhận trả sách & Tính tiền phạt:</span>
-      Nếu độc giả trả sách trễ hơn hạn hẹn trả (<strong class="text-emerald-700 font-bold"><%= ticket.due_date %></strong>), 
-      tiền phạt sẽ được tính bằng <strong class="text-emerald-700 font-bold"><%= fineCalc.finePerDay.toLocaleString('vi-VN') %> VNĐ / ngày trễ</strong> cho mỗi cuốn.
-      Tiền phạt sẽ được tự động cộng dồn vào tổng tiền nợ của độc giả.
-    </div>
-  </div>
-
-  <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
-    <div class="mb-6 pb-4 border-b border-slate-100 flex items-center justify-between">
-      <div>
-        <h2 class="text-lg font-bold text-slate-800">Nhận Trả Sách - Phiếu <%= ticket.ticket_code %></h2>
-        <p class="text-xs text-slate-500">Độc giả: <strong><%= ticket.reader_name %></strong> (<%= ticket.reader_code %>)</p>
+  <div class="max-w-4xl mx-auto space-y-6">
+    <!-- Guidance Card for  -->
+    <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-start gap-3">
+      <i class="fa-solid fa-circle-info text-emerald-600 text-lg mt-0.5"></i>
+      <div class="text-xs text-emerald-900 leading-relaxed">
+        <span class="font-bold">Nhận trả sách & Tính tiền phạt:</span>
+        Nếu độc giả trả sách trễ hơn hạn hẹn trả (<strong class="text-emerald-700 font-bold">
+          <%= ticket.due_date %>
+        </strong>),
+        tiền phạt sẽ được tính bằng <strong class="text-emerald-700 font-bold">
+          <%= fineCalc.finePerDay.toLocaleString('vi-VN') %> VNĐ / ngày trễ
+        </strong> cho mỗi cuốn.
+        Tiền phạt sẽ được tự động cộng dồn vào tổng tiền nợ của độc giả.
       </div>
-      <a href="/borrow/<%= ticket.id %>" class="text-xs text-slate-500 hover:text-slate-800">
-        <i class="fa-solid fa-arrow-left mr-1"></i> Quay lại
-      </a>
     </div>
 
-    <form action="/borrow/<%= ticket.id %>/return" method="POST" id="returnForm" class="space-y-6">
-      <!-- Return Date Selector -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+      <div class="mb-6 pb-4 border-b border-slate-100 flex items-center justify-between">
         <div>
-          <label class="block font-semibold text-slate-700 mb-1">Ngày Thực Tế Nhận Trả</label>
-          <input type="date" name="return_date" id="returnDateInput" value="<%= todayStr %>"
-            class="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white text-xs focus:ring-2 focus:ring-blue-500 focus:outline-hidden" />
-          <span class="text-[10px] text-slate-400 mt-1 block">Có thể đổi ngày để test trường hợp trả trễ / phạt</span>
+          <h2 class="text-lg font-bold text-slate-800">Nhận Trả Sách - Phiếu <%= ticket.ticket_code %>
+          </h2>
+          <p class="text-xs text-slate-500">Độc giả: <strong>
+              <%= ticket.reader_name %>
+            </strong> (<%= ticket.reader_code %>)</p>
         </div>
-        <div>
-          <label class="block font-semibold text-slate-700 mb-1">Số Ngày Trễ Hạn Tính Toán</label>
-          <div class="p-2 rounded-xl bg-white border border-slate-200 flex items-center justify-between">
-            <span id="overdueDaysText" class="font-bold <%= fineCalc.overdueDays > 0 ? 'text-red-600' : 'text-green-600' %>">
-              <%= fineCalc.overdueDays > 0 ? `Trễ ${fineCalc.overdueDays} ngày` : 'Trả đúng hạn (0 ngày trễ)' %>
-            </span>
-            <span class="text-slate-400 font-mono text-[11px]">Hạn trả: <%= ticket.due_date %></span>
+        <a href="/borrow/<%= ticket.id %>" class="text-xs text-slate-500 hover:text-slate-800">
+          <i class="fa-solid fa-arrow-left mr-1"></i> Quay lại
+        </a>
+      </div>
+
+      <form action="/borrow/<%= ticket.id %>/return" method="POST" id="returnForm" class="space-y-6">
+        <!-- Return Date Selector -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Ngày Thực Tế Nhận Trả</label>
+            <input type="date" name="return_date" id="returnDateInput" value="<%= todayStr %>"
+              class="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white text-xs focus:ring-2 focus:ring-blue-500 focus:outline-hidden" />
+            <span class="text-[10px] text-slate-400 mt-1 block">Có thể đổi ngày để test trường hợp trả trễ / phạt</span>
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Số Ngày Trễ Hạn Tính Toán</label>
+            <div class="p-2 rounded-xl bg-white border border-slate-200 flex items-center justify-between">
+              <span id="overdueDaysText"
+                class="font-bold <%= fineCalc.overdueDays > 0 ? 'text-red-600' : 'text-green-600' %>">
+                <%= fineCalc.overdueDays> 0 ? `Trễ ${fineCalc.overdueDays} ngày` : 'Trả đúng hạn (0 ngày trễ)' %>
+              </span>
+              <span class="text-slate-400 font-mono text-[11px]">Hạn trả: <%= ticket.due_date %></span>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Items to Return -->
-      <div>
-        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-          Chọn Các Cuốn Sách Cần Hoàn Trả
-        </label>
-
-        <div class="space-y-3">
-          <% const activeItems = (ticket.details || []).filter(d => d.status === 'borrowed'); %>
-          <% if (activeItems.length > 0) { %>
-            <% activeItems.forEach(d => { %>
-              <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
-                <div class="flex items-center justify-between">
-                  <label class="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" name="item_<%= d.id %>_selected" checked
-                      class="return-checkbox w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
-                    <span class="font-bold text-slate-800 text-sm"><%= d.book_title %></span>
-                    <span class="font-mono text-xs text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                      <%= d.barcode %>
-                    </span>
-                  </label>
-                  <span class="text-xs text-slate-500">Trị giá: <%= (d.book_price || 0).toLocaleString('vi-VN') %> đ</span>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs pt-2 border-t border-slate-200/60">
-                  <div>
-                    <label class="block text-slate-600 mb-1">Tình trạng sách khi trả</label>
-                    <select name="item_<%= d.id %>_status" onchange="handleStatusChange(this, '<%= d.id %>', <%= d.book_price || 0 %>)"
-                      class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
-                      <option value="returned">Bình thường (Đã trả nguyên vẹn)</option>
-                      <option value="damaged">Bị hư hỏng (Bồi thường tiền)</option>
-                      <option value="lost">Bị mất sách (Đền trị giá sách)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label class="block text-slate-600 mb-1">Tiền phạt hư hỏng / đền bù (VNĐ)</label>
-                    <input type="number" id="fee_<%= d.id %>" name="item_<%= d.id %>_damage_fee" value="0" min="0" step="1000"
-                      class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-red-600" />
-                  </div>
-
-                  <div>
-                    <label class="block text-slate-600 mb-1">Ghi chú tình trạng</label>
-                    <input type="text" name="item_<%= d.id %>_damage_note" placeholder="Rách bìa, mất trang..."
-                      class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs" />
-                  </div>
-                </div>
-              </div>
-            <% }) %>
-          <% } else { %>
-            <div class="py-8 text-center text-slate-400 text-xs">
-              Tất cả các sách trong phiếu này đã được hoàn trả xong!
-            </div>
-          <% } %>
-        </div>
-      </div>
-
-      <!-- Live summary box -->
-      <div class="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-between text-xs">
+        <!-- Items to Return -->
         <div>
-          <span class="font-bold text-amber-900 block">Ước tính tiền phạt trễ hạn theo quy định:</span>
-          <span class="text-slate-600">
-            <span id="summaryOverdueDays"><%= fineCalc.overdueDays %></span> ngày trễ &times; <%= fineCalc.finePerDay.toLocaleString('vi-VN') %> đ/ngày
-          </span>
-        </div>
-        <div class="text-right">
-          <span class="text-lg font-black text-red-600" id="summaryFineAmount">
-            <%= fineCalc.fineAmount.toLocaleString('vi-VN') %> VNĐ / cuốn
-          </span>
-        </div>
-      </div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+            Chọn Các Cuốn Sách Cần Hoàn Trả
+          </label>
 
-      <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-3">
-        <a href="/borrow/<%= ticket.id %>" class="px-4 py-2.5 border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl text-xs font-semibold transition">
-          Hủy bỏ
-        </a>
-        <button type="submit" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition flex items-center gap-2">
-          <i class="fa-solid fa-check"></i>
-          <span>Xác Nhận Hoàn Trả Sách</span>
-        </button>
-      </div>
-    </form>
+          <div class="space-y-3">
+            <% const activeItems=(ticket.details || []).filter(d=> d.status === 'borrowed'); %>
+              <% if (activeItems.length> 0) { %>
+                <% activeItems.forEach(d=> { %>
+                  <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                    <div class="flex items-center justify-between">
+                      <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" name="item_<%= d.id %>_selected" checked
+                          class="return-checkbox w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+                        <span class="font-bold text-slate-800 text-sm">
+                          <%= d.book_title %>
+                        </span>
+                        <span
+                          class="font-mono text-xs text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                          <%= d.barcode %>
+                        </span>
+                      </label>
+                      <span class="text-xs text-slate-500">Trị giá: <%= (d.book_price || 0).toLocaleString('vi-VN') %>
+                          đ</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs pt-2 border-t border-slate-200/60">
+                      <div>
+                        <label class="block text-slate-600 mb-1">Tình trạng sách khi trả</label>
+                        <select name="item_<%= d.id %>_status"
+                          onchange="handleStatusChange(this, '<%= d.id %>', <%= d.book_price || 0 %>)"
+                          class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
+                          <option value="returned">Bình thường (Đã trả nguyên vẹn)</option>
+                          <option value="damaged">Bị hư hỏng (Bồi thường tiền)</option>
+                          <option value="lost">Bị mất sách (Đền trị giá sách)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label class="block text-slate-600 mb-1">Tiền phạt hư hỏng / đền bù (VNĐ)</label>
+                        <input type="number" id="fee_<%= d.id %>" name="item_<%= d.id %>_damage_fee" value="0" min="0"
+                          step="1"
+                          class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-red-600" />
+                      </div>
+
+                      <div>
+                        <label class="block text-slate-600 mb-1">Ghi chú tình trạng</label>
+                        <input type="text" name="item_<%= d.id %>_damage_note" placeholder="Rách bìa, mất trang..."
+                          class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs" />
+                      </div>
+                    </div>
+                  </div>
+                  <% }) %>
+                    <% } else { %>
+                      <div class="py-8 text-center text-slate-400 text-xs">
+                        Tất cả các sách trong phiếu này đã được hoàn trả xong!
+                      </div>
+                      <% } %>
+          </div>
+        </div>
+
+        <!-- Live summary box -->
+        <div class="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-between text-xs">
+          <div>
+            <span class="font-bold text-amber-900 block">Ước tính tiền phạt trễ hạn theo quy định:</span>
+            <span class="text-slate-600">
+              <span id="summaryOverdueDays">
+                <%= fineCalc.overdueDays %>
+              </span> ngày trễ &times; <%= fineCalc.finePerDay.toLocaleString('vi-VN') %> đ/ngày
+            </span>
+          </div>
+          <div class="text-right">
+            <span class="text-lg font-black text-red-600" id="summaryFineAmount">
+              <%= fineCalc.fineAmount.toLocaleString('vi-VN') %> VNĐ / cuốn
+            </span>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-3">
+          <a href="/borrow/<%= ticket.id %>"
+            class="px-4 py-2.5 border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl text-xs font-semibold transition">
+            Hủy bỏ
+          </a>
+          <button type="submit"
+            class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition flex items-center gap-2">
+            <i class="fa-solid fa-check"></i>
+            <span>Xác Nhận Hoàn Trả Sách</span>
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
-</div>
 
-<script>
-  const dueDateStr = '<%= ticket.due_date %>';
-  const finePerDay = <%= fineCalc.finePerDay %>;
-  const returnDateInput = document.getElementById('returnDateInput');
-  const overdueDaysText = document.getElementById('overdueDaysText');
-  const summaryOverdueDays = document.getElementById('summaryOverdueDays');
-  const summaryFineAmount = document.getElementById('summaryFineAmount');
+  <script>
+    const dueDateStr = '<%= ticket.due_date %>';
+    const finePerDay = <%= fineCalc.finePerDay %>;
+    const returnDateInput = document.getElementById('returnDateInput');
+    const overdueDaysText = document.getElementById('overdueDaysText');
+    const summaryOverdueDays = document.getElementById('summaryOverdueDays');
+    const summaryFineAmount = document.getElementById('summaryFineAmount');
 
-  function calculateFine() {
-    const returnVal = returnDateInput.value;
-    if (!returnVal) return;
+    function calculateFine() {
+      const returnVal = returnDateInput.value;
+      if (!returnVal) return;
 
-    const rDate = new Date(returnVal);
-    const dDate = new Date(dueDateStr);
-    rDate.setHours(0,0,0,0);
-    dDate.setHours(0,0,0,0);
+      const rDate = new Date(returnVal);
+      const dDate = new Date(dueDateStr);
+      rDate.setHours(0, 0, 0, 0);
+      dDate.setHours(0, 0, 0, 0);
 
-    const diff = rDate.getTime() - dDate.getTime();
-    const days = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-    const fine = days * finePerDay;
+      const diff = rDate.getTime() - dDate.getTime();
+      const days = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+      const fine = days * finePerDay;
 
-    if (days > 0) {
-      overdueDaysText.className = 'font-bold text-red-600';
-      overdueDaysText.textContent = `Trễ ${days} ngày (Phạt ${fine.toLocaleString('vi-VN')} đ/cuốn)`;
-    } else {
-      overdueDaysText.className = 'font-bold text-green-600';
-      overdueDaysText.textContent = 'Trả đúng hạn (0 ngày trễ)';
+      if (days > 0) {
+        overdueDaysText.className = 'font-bold text-red-600';
+        overdueDaysText.textContent = `Trễ ${days} ngày (Phạt ${fine.toLocaleString('vi-VN')} đ/cuốn)`;
+      } else {
+        overdueDaysText.className = 'font-bold text-green-600';
+        overdueDaysText.textContent = 'Trả đúng hạn (0 ngày trễ)';
+      }
+
+      summaryOverdueDays.textContent = days;
+      summaryFineAmount.textContent = `${fine.toLocaleString('vi-VN')} VNĐ / cuốn`;
     }
 
-    summaryOverdueDays.textContent = days;
-    summaryFineAmount.textContent = `${fine.toLocaleString('vi-VN')} VNĐ / cuốn`;
-  }
+    returnDateInput.addEventListener('change', calculateFine);
 
-  returnDateInput.addEventListener('change', calculateFine);
-
-  function handleStatusChange(selectEl, detailId, bookPrice) {
-    const feeInput = document.getElementById(`fee_${detailId}`);
-    if (selectEl.value === 'lost') {
-      feeInput.value = bookPrice;
-    } else if (selectEl.value === 'damaged') {
-      feeInput.value = Math.round(bookPrice * 0.3); // 30% giá trị sách
-    } else {
-      feeInput.value = 0;
+    function handleStatusChange(selectEl, detailId, bookPrice) {
+      const feeInput = document.getElementById(`fee_${detailId}`);
+      if (selectEl.value === 'lost') {
+        feeInput.value = bookPrice;
+      } else if (selectEl.value === 'damaged') {
+        feeInput.value = Math.round(bookPrice * 0.3); // 30% giá trị sách
+      } else {
+        feeInput.value = 0;
+      }
     }
-  }
-</script>
+  </script>
 
-<%- include('../partials/layout-end') %>
+  <%- include('../partials/layout-end') %>

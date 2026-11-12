@@ -1,0 +1,176 @@
+<%- include('../partials/layout-start') %>
+
+<%
+  const statusLabel = {
+    pending: 'Chờ duyệt',
+    approved: 'Đã duyệt',
+    fulfilled: 'Đã nhận sách',
+    cancelled: 'Đã huỷ',
+    expired: 'Hết hạn'
+  };
+  const statusClass = {
+    pending: 'bg-amber-100 text-amber-800',
+    approved: 'bg-blue-100 text-blue-800',
+    fulfilled: 'bg-green-100 text-green-800',
+    cancelled: 'bg-slate-200 text-slate-600',
+    expired: 'bg-red-100 text-red-800'
+  };
+  const counts = { pending: 0, approved: 0, fulfilled: 0, cancelled: 0, expired: 0 };
+  reservations.forEach(r => { counts[r.status] = (counts[r.status] || 0) + 1; });
+%>
+
+<div class="space-y-6">
+  <!-- Top Bar -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h2 class="text-xl font-bold text-slate-800">Quản Lý Đặt Mượn Sách Online</h2>
+      <p class="text-xs text-slate-500">Duyệt yêu cầu đặt trước của độc giả, xác nhận khi độc giả nhận sách hoặc huỷ yêu cầu</p>
+    </div>
+    <a href="/borrow/create" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition flex items-center gap-1.5 self-start">
+      <i class="fa-solid fa-plus-circle"></i>
+      <span>Lập Phiếu Mượn</span>
+    </a>
+  </div>
+
+  <!-- Thống kê nhanh -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs">
+      <div class="flex items-center justify-between">
+        <span class="text-xs text-slate-500 font-medium">Chờ duyệt</span>
+        <i class="fa-solid fa-hourglass-half text-amber-500"></i>
+      </div>
+      <div class="text-2xl font-black text-slate-800 mt-1"><%= counts.pending %></div>
+    </div>
+    <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs">
+      <div class="flex items-center justify-between">
+        <span class="text-xs text-slate-500 font-medium">Đã duyệt</span>
+        <i class="fa-solid fa-circle-check text-blue-500"></i>
+      </div>
+      <div class="text-2xl font-black text-slate-800 mt-1"><%= counts.approved %></div>
+    </div>
+    <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs">
+      <div class="flex items-center justify-between">
+        <span class="text-xs text-slate-500 font-medium">Đã nhận sách</span>
+        <i class="fa-solid fa-book-open text-emerald-500"></i>
+      </div>
+      <div class="text-2xl font-black text-slate-800 mt-1"><%= counts.fulfilled %></div>
+    </div>
+    <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs">
+      <div class="flex items-center justify-between">
+        <span class="text-xs text-slate-500 font-medium">Đã huỷ / hết hạn</span>
+        <i class="fa-solid fa-ban text-slate-400"></i>
+      </div>
+      <div class="text-2xl font-black text-slate-800 mt-1"><%= (counts.cancelled || 0) + (counts.expired || 0) %></div>
+    </div>
+  </div>
+
+  <!-- Bộ lọc -->
+  <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+    <form action="/reservations" method="GET" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+      <select name="status" class="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500">
+        <option value="">-- Tất cả trạng thái --</option>
+        <option value="pending" <%= currentStatus === 'pending' ? 'selected' : '' %>>Chờ duyệt</option>
+        <option value="approved" <%= currentStatus === 'approved' ? 'selected' : '' %>>Đã duyệt</option>
+        <option value="fulfilled" <%= currentStatus === 'fulfilled' ? 'selected' : '' %>>Đã nhận sách</option>
+        <option value="cancelled" <%= currentStatus === 'cancelled' ? 'selected' : '' %>>Đã huỷ</option>
+        <option value="expired" <%= currentStatus === 'expired' ? 'selected' : '' %>>Hết hạn</option>
+      </select>
+      <div class="flex items-center gap-2">
+        <button type="submit" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold transition">
+          <i class="fa-solid fa-filter mr-1"></i> Lọc
+        </button>
+        <% if (currentStatus) { %>
+          <a href="/reservations" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs transition">Xóa lọc</a>
+        <% } %>
+      </div>
+    </form>
+  </div>
+
+  <!-- Danh sách yêu cầu -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs">
+        <thead class="bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider border-b border-slate-200">
+          <tr>
+            <th class="py-3 px-4">Mã Yêu Cầu</th>
+            <th class="py-3 px-4">Độc Giả</th>
+            <th class="py-3 px-4">Sách Đặt Trước</th>
+            <th class="py-3 px-4">Ngày Đặt</th>
+            <th class="py-3 px-4">Ghi Chú</th>
+            <th class="py-3 px-4">Trạng Thái</th>
+            <th class="py-3 px-4 text-right">Thao Tác</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <% if (reservations && reservations.length > 0) { %>
+            <% reservations.forEach(r => { %>
+              <tr class="hover:bg-slate-50/80 transition">
+                <td class="py-3.5 px-4 font-mono font-bold text-blue-600">
+                  <i class="fa-solid fa-bookmark text-slate-400 mr-1"></i>#<%= r.id %>
+                </td>
+                <td class="py-3.5 px-4">
+                  <div class="font-bold text-slate-800"><%= r.reader_name %></div>
+                  <div class="text-[11px] text-slate-400"><%= r.reader_code %> &bull; <%= r.reader_phone || 'N/A' %></div>
+                </td>
+                <td class="py-3.5 px-4">
+                  <a href="/books/<%= r.book_id %>" class="font-semibold text-slate-800 hover:text-blue-600 hover:underline flex items-center gap-2">
+                    <img src="<%= r.cover_image || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=80' %>"
+                      alt="" class="w-7 h-9 object-cover rounded-md border border-slate-100" />
+                    <span><%= r.book_title %></span>
+                  </a>
+                  <div class="text-[11px] text-slate-400 mt-0.5">
+                    <%= r.category_name %> &bull; còn <strong><%= r.available_copies %></strong>/<%= r.total_copies %> bản sẵn có
+                  </div>
+                </td>
+                <td class="py-3.5 px-4 text-slate-600 font-mono"><%= (r.reserve_date || '').toString().slice(0, 16) %></td>
+                <td class="py-3.5 px-4 text-slate-500 max-w-[180px]"><%= r.note || '—' %></td>
+                <td class="py-3.5 px-4">
+                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold <%= statusClass[r.status] || 'bg-slate-100 text-slate-700' %>">
+                    <%= statusLabel[r.status] || r.status %>
+                  </span>
+                </td>
+                <td class="py-3.5 px-4">
+                  <div class="flex items-center justify-end gap-1.5">
+                    <% if (r.status === 'pending') { %>
+                      <form action="/reservations/<%= r.id %>/status" method="POST">
+                        <input type="hidden" name="status" value="approved" />
+                        <button type="submit" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition shadow-2xs">
+                          <i class="fa-solid fa-check mr-1"></i>Duyệt
+                        </button>
+                      </form>
+                    <% } %>
+                    <% if (r.status === 'pending' || r.status === 'approved') { %>
+                      <form action="/reservations/<%= r.id %>/status" method="POST">
+                        <input type="hidden" name="status" value="fulfilled" />
+                        <button type="submit" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-medium transition shadow-2xs">
+                          <i class="fa-solid fa-hand-holding-heart mr-1"></i>Đã nhận
+                        </button>
+                      </form>
+                      <form action="/reservations/<%= r.id %>/status" method="POST" onsubmit="return confirm('Huỷ yêu cầu đặt mượn này?');">
+                        <input type="hidden" name="status" value="cancelled" />
+                        <button type="submit" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition">
+                          Huỷ
+                        </button>
+                      </form>
+                    <% } %>
+                    <% if (r.status === 'fulfilled') { %>
+                      <a href="/borrow/create" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition">
+                        Lập phiếu mượn
+                      </a>
+                    <% } %>
+                  </div>
+                </td>
+              </tr>
+            <% }) %>
+          <% } else { %>
+            <tr>
+              <td colspan="7" class="text-center py-8 text-slate-400">Không có yêu cầu đặt mượn nào</td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/layout-end') %>

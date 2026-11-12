@@ -104,7 +104,7 @@
           </label>
           <p class="text-[11px] text-slate-500 mb-2">Mỗi ngày trễ hạn sẽ bị phạt P đồng cho mỗi cuốn sách.</p>
           <div class="flex items-center gap-2">
-            <input type="number" name="fine_per_day" min="100" step="500"
+            <input type="number" name="fine_per_day" min="0" step="1"
               value="<%= systemRules.fine_per_day || 1000 %>"
               class="w-32 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-red-600 focus:ring-2 focus:ring-blue-500" />
             <span class="text-slate-500 font-semibold">VNĐ / ngày / cuốn</span>

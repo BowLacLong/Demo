@@ -28,15 +28,15 @@ function authorize(...allowedRoles) {
   };
 }
 
-function attachLocals(req, res, next) {
+async function attachLocals(req, res, next) {
   res.locals.currentUser = req.session ? req.session.user : null;
   res.locals.flashSuccess = req.flash('success');
   res.locals.flashError = req.flash('error');
   res.locals.currentPath = req.path;
-  
+
   // Attach common library info
   try {
-    const rules = ruleService.getRulesMap();
+    const rules = await ruleService.getRulesMap();
     res.locals.libraryName = rules.library_name || 'Hệ Thống Quản Lý Thư Viện';
     res.locals.systemRules = rules;
   } catch (e) {
