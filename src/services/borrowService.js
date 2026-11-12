@@ -249,9 +249,11 @@ class BorrowService {
 
     let totalFineAdded = 0;
 
+    const processedBooks = new Set();
+
     for (const item of itemsToReturn) {
       const detail = ticket.details.find(d => d.id === Number(item.detailId));
-      if (!detail || detail.status !== 'borrowed') continue;
+      if (!detail) continue;
 
       let itemFine = 0;
       let copyNewStatus = 'available';
@@ -291,7 +293,14 @@ class BorrowService {
         { id: detail.book_copy_id },
         { $set: { status: copyNewStatus } }
       );
-      await bookService.recalculateCopies(detail.book_id);
+
+      // Theo dõi sách đã cập nhật để recalculate một lần duy nhất cho mỗi book_id
+      processedBooks.add(detail.book_id);
+    }
+
+    // Sau khi xử lý xong tất cả cuốn sách, recalculate tổng quan cho từng book_id đã được sửa
+    for (const bookId of processedBooks) {
+      await bookService.recalculateCopies(bookId);
     }
 
     // Cộng tiền phạt vào nợ độc giả nếu có
